@@ -1,0 +1,11 @@
+real_name       UTF-8
+english_name    ASCII
+Aliases         UTF-8
+Birthdate       date
+Birthplace      UTF-8
+Height          ASCII
+Weight          ASCII
+Blood type      ASCII
+Measurements    ASCII
+Blog            link
+Twitter         link
