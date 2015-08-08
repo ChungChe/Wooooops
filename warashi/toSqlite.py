@@ -10,12 +10,10 @@ def create_all_table(dbName):
         cur = con.cursor()
 # create table actress (av_ID PRIMARY KEY AUTOINCREMENT, real_name, eng_name);
         cur.execute("create table actress ( \
-                        av_ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \
+                        av_ID INTEGER NOT NULL PRIMARY KEY, \
                         real_name TEXT, \
-                        eng_name TEXT, \
-                        warashi_id INTEGER \
+                        eng_name TEXT \
                     )")
-
 # Multiple av_ID may refer to same info (Aliases)
         cur.execute("create table actressInfo ( \
                         info_ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \
@@ -25,8 +23,8 @@ def create_all_table(dbName):
                         weight INTEGER, \
                         blood_type TEXT, \
                         measurements TEXT, \
-                        blog TEXT, \
-                        twitter TEXT \
+                        link_ID INTEGER, \
+                        tag_ID INTEGER \
                     )")
 
         cur.execute("create table film ( \
@@ -36,14 +34,24 @@ def create_all_table(dbName):
                         company TEXT \
                     )")
         
-        cur.execute("create table tag( \
+        cur.execute("create table tag ( \
                         tag_ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \
                         name TEXT NOT NULL \
+                    )")
+        
+        cur.execute("create table av_link ( \
+                        link_ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \
+                        address TEXT NOT NULL \
                     )")
         
         cur.execute("create table actress_info ( \
                         av_ID INTEGER NOT NULL, \
                         info_ID INTEGER NOT NULL \
+                    )")
+        
+        cur.execute("create table actress_link( \
+                        av_ID INTEGER NOT NULL, \
+                        link_ID INTEGER NOT NULL \
                     )")
         
         cur.execute("create table actress_alias ( \
@@ -77,9 +85,26 @@ def create_all_table(dbName):
         if con:
             con.close()
 
+#  1. For actress
+def insert_actress(cur, data):
+    cur.execute('insert or replace into actress values (?,?,?)', data) 
+#  2. For actressInfo
+def insert_actressInfo(cur, data):
+    cur.execute('insert or replace into actressInfo values (?,?,?,?,?,?,?,?,?)', data)
+#  3. For film
+#  4. For tag
+#  5. For actress_info
+#  6. For actress_alias
+#  7. For actress_link
+#  8. For actress_film
+#  9. For actress_tag
+# 10. For film_tag
+# 11. For av_link
+#
+
 
 #def insert_actress_info_from_csv(csv):
-# insert info actress ( \
+# insert into actress ( \
 #                           real_name, \
 #                           eng_name, \
 #                           birthdate, \
@@ -92,4 +117,4 @@ def create_all_table(dbName):
 #                           twitter \
 #                     ) values ("...", "...",...);
 #
-create_all_table(dbName)
+#create_all_table(dbName)
