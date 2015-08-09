@@ -7,7 +7,7 @@ import re
 import glob, os
 import toSqlite
 os.chdir("IdolPage");
-toSqlite.create_all_table('AV.db')
+toSqlite.create_all_table('../AV.db')
 def get_actressInfo(soup, av_ID):
     # Get Birthdate
     birthdate = None
@@ -19,7 +19,7 @@ def get_actressInfo(soup, av_ID):
     birthplace = None
     birthplaceSection = soup.find('span', {"itemprop":"addressRegion"})
     if birthplaceSection != None:
-        birthplace = birthdataSection.string
+        birthplace = birthplaceSection.string
         print(birthplace)
 
     # Get Height
@@ -58,7 +58,7 @@ def get_actressInfo(soup, av_ID):
     return [av_ID, birthdate, birthplace, height, weight, bloodType, measurement]
     
 try:
-    con = db.connect('AV.db')
+    con = db.connect('../AV.db')
     print("Connect to IdolPage/AV.db")
     cur = con.cursor()
         
