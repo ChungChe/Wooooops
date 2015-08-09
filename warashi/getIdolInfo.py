@@ -7,7 +7,7 @@ import re
 import glob, os
 import toSqlite
 os.chdir("IdolPage");
-toSqlite.create_all_table('../AV.db')
+#toSqlite.create_all_table('../AV.db')
 def get_actressInfo(soup, av_ID):
     # Get Birthdate
     birthdate = None
@@ -36,7 +36,7 @@ def get_actressInfo(soup, av_ID):
     if weightSection != None:
         weightSpan = weightSection.find('span',{"itemprop":"value"})
         if weightSpan != None:
-            weight = weightSection.string
+            weight = weightSpan.string
             print(weight)
             
     # Get Blood Type
@@ -49,11 +49,14 @@ def get_actressInfo(soup, av_ID):
     for measurementSection in soup(text=re.compile('measurements:')):
         measurementTemp = measurementSection.rsplit(': JP ')
         print('size: '+str(len(measurementTemp)))
-        if (len(measurementTemp) != 2):
+        if (len(measurementTemp) == 1):
+            measurement = None
+        elif (len(measurementTemp) != 2):
             measurementTemp = measurementSection.rsplit(': FR ')[1]
+            measurement = measurementTemp.rsplit('(US')[0]
         else:
             measurementTemp = measurementTemp[1]
-        measurement = measurementTemp.rsplit('(US')[0]
+            measurement = measurementTemp.rsplit('(US')[0]
         print(measurement)
     return [av_ID, birthdate, birthplace, height, weight, bloodType, measurement]
     
@@ -167,6 +170,7 @@ try:
                 print('Error: cannot find title: ', film_title)
         f.close()
         con.commit()
+        os.rename(file, 'proceed/' + file)
 except db.Error, e:
     if con:
         con.rollback()
