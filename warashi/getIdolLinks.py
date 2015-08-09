@@ -17,8 +17,8 @@ def download_url(url, path_to_save):
     f.write(content.read())
     f.close()
 
-# print the title
-for fileId in range(1, 46):
+# So far, the max page is 60
+for fileId in range(1, 61):
     
     f = codecs.open("page/" + str(fileId), "r", "utf-8")
     if f == None:
