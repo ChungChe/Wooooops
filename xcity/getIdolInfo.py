@@ -6,6 +6,7 @@ import urllib2
 import codecs
 import re
 import glob, os
+import download as dl
 os.chdir("page");
 
 def get_actressInfo(soup, av_ID):
@@ -61,7 +62,7 @@ def get_actressInfo(soup, av_ID):
     return [av_ID, birthdate, birthplace, height, weight, bloodType, measurement]
     
         
-for file in glob.glob("10"): 
+for file in glob.glob("*"): 
     warashi_avId = int(file) 
     print(warashi_avId)
     f = codecs.open(str(file), "r", "utf-8")
@@ -73,36 +74,59 @@ for file in glob.glob("10"):
     soup = BeautifulSoup(content);
     
     title = soup.find('meta', {"property": "og:title"})
+    if title == None:
+        continue;
     av_name = title['content']
     name_list = re.split('\(|\)', av_name)
     # 1. Name
     if name_list != None:
         print(name_list[0])
-    profile = soup.find('dl', {"class": "profile"})
-    if profile != None:
-        ddSection = profile.find_all('dd')
-        # 2. Birthdate
-        birthdate = ddSection[1].contents[1]
-        birthdate = birthdate.replace(u"年","-")
-        birthdate = birthdate.replace(u"月","-")
-        birthdate = birthdate.replace(u"日","")
-
-        print(birthdate)
-        # 3. Blood type
-        bloodType = ddSection[2].contents[1]
-        bloodType = bloodType.replace(u"型","")
-        print(bloodType)
-        # 4. Birthplace
-        print(ddSection[3].contents[1])
-        # 5. Height
-        height = ddSection[4].contents[1]
-        height = height.replace("cm","")
-        print(height)
-        # 6. Measurements
-        # Change B82(C-65) W56 H83
-        # Or B82 W56 H83
-        # To 82-56-83
-        measurementSection = ddSection[5].contents[1]
-        print(measurementSection)
-
+# ------ profile section is buggy, see profile 3384 --------
+#    profile = soup.find('dl', {"class": "profile"})
+#    if profile != None:
+#        ddSection = profile.find_all('dd')
+#        # 2. Birthdate
+#        birthdate = ddSection[1].contents[1]
+#        birthdate = birthdate.replace(u"年","-")
+#        birthdate = birthdate.replace(u"月","-")
+#        birthdate = birthdate.replace(u"日","")
+#
+#        print(birthdate)
+#        # 3. Blood type
+#        bloodType = ddSection[2].contents[1]
+#        bloodType = bloodType.replace(u"型","")
+#        print(bloodType)
+#        # 4. Birthplace
+#        print(ddSection[3].contents[1])
+#        # 5. Height
+#        height = ddSection[4].contents[1]
+#        height = height.replace("cm","")
+#        print(height)
+#        # 6. Measurements
+#        # Change B82(C-65) W56 H83
+#        # Or B82 W56 H83
+#        # To 82-56-83
+#        measurementSection = ddSection[5].contents[1]
+#        print(measurementSection)
+    # download image
+    photo = soup.find('div', {"class": "photo"})
+    if photo != None:
+        imgTag = soup.find('img')
+        if imgTag != None:
+            imgsrc = imgTag['src']
+            print(imgsrc)
+            img_path = "../image/" + str(file)
+            dl.download_url(imgsrc, img_path)
+    # download itemBox
+    prefix = "http://xcity.jp" 
+    items = soup.find_all('div', {"class": "x-itemBox-package"})
+    for item in items:
+        url = item.find('a')
+        if url == None:
+            continue;
+        url = prefix + url['href']
+        print(url)
+        download_path = "../video/" + url.split('?id=')[1]
+        dl.download_url(url, download_path)
+    os.rename(file, '../proceed/' + file)
     f.close()
