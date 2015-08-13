@@ -68,9 +68,11 @@ def get_filmInfo(soup, av_ID):
     # photo
     photo_section = soup.find('div', {"class": "photo"})
     if photo_section != None:
-        url = photo_section.p.a.img['src'].split('?width')[0]
-        download_path = "../video_img/" + str(av_ID) + ".jpg"
-        dl.download_url(url, download_path)
+        tn_section = photo_section.find('p', {"class": "tn"})
+        if tn_section != None:
+            url = tn_section.a.img['src'].split('?width')[0]
+            download_path = "../video_img/" + str(av_ID) + ".jpg"
+            dl.download_url(url, download_path)
 #    return [av_ID+10000, av_name, birthdate, birthplace, height, bloodType, measurement]
 
 try:
