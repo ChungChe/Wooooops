@@ -89,11 +89,11 @@ try:
         
         soup = BeautifulSoup(content);
         result = get_filmInfo(soup, int(file)) 
-        if result == None:
-            f.close()
-            continue
+#if result == None:
+#            f.close()
+#            continue
         # update result to DB
-        print(result)
+#        print(result)
 #w.updateResultToDB(cur, result)
         f.close()
 #con.commit()
