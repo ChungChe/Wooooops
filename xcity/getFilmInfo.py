@@ -33,7 +33,10 @@ def get_filmInfo(soup, av_ID):
     av_name = None
     av_name_section = content_section.find('li', {"id": "program_detail_credit"})
     if av_name_section != None:
-        av_name = av_name_section.find('a').string
+        if av_name_section.find('a') != None:
+            av_name = av_name_section.find('a').string
+        else:
+            av_name = av_name_section.string
         print(av_name)
 
     company = None
