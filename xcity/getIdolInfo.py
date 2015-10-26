@@ -13,6 +13,7 @@ def get_actressInfo(soup, av_ID):
     title = soup.find('meta', {"property": "og:title"})
     if title == None:
         print("Title is empty, skip")
+        os.rename(file, '../title_empty/' + file)
         return None
     av_name = title['content']
     name_list = re.split('\(|\)', av_name)
@@ -94,10 +95,39 @@ try:
         result = get_actressInfo(soup, int(file)) 
         if result == None:
             continue
+        
+        # download image
+        frame = soup.find('div', {"class": "frame"})
+        if frame != None:
+            photo = frame.find('div', {"class": "photo"})
+            if photo != None:
+                imgTag = photo.find('img')
+                if imgTag != None:
+                    imgsrc = imgTag['src']
+                    noImage = re.search('noimage', imgsrc) 
+                    if noImage == None:
+                        print(imgsrc)
+                        img_path = "../image/" + str(file)
+                        dl.download_url(imgsrc, img_path)
+                    else:
+                        print('no image...')
+        # download itemBox
+#prefix = "http://xcity.jp" 
+#        items = soup.find_all('div', {"class": "x-itemBox-package"})
+#        for item in items:
+#            url = item.find('a')
+#            if url == None:
+#                continue;
+#            url = prefix + url['href']
+#            print(url)
+#            download_path = "../video/" + url.split('?id=')[1]
+#            dl.download_url(url, download_path)
+
         # update result to DB
         print(result)
-        w.updateResultToDB(cur, result)
+        w.updateIdolResultToDB(cur, result)
         f.close()
+        print('commit!')
         con.commit()
         os.rename(file, '../proceed/' + file)
 except db.Error, e:
@@ -110,23 +140,3 @@ finally:
         cur.close()
     if con:
         con.close()
-#    # download image
-#    photo = soup.find('div', {"class": "photo"})
-#    if photo != None:
-#        imgTag = soup.find('img')
-#        if imgTag != None:
-#            imgsrc = imgTag['src']
-#            print(imgsrc)
-#            img_path = "../image/" + str(file)
-#            dl.download_url(imgsrc, img_path)
-#    # download itemBox
-#    prefix = "http://xcity.jp" 
-#    items = soup.find_all('div', {"class": "x-itemBox-package"})
-#    for item in items:
-#        url = item.find('a')
-#        if url == None:
-#            continue;
-#        url = prefix + url['href']
-#        print(url)
-#        download_path = "../video/" + url.split('?id=')[1]
-#        dl.download_url(url, download_path)

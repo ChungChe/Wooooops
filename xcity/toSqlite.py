@@ -36,11 +36,13 @@ def updateResultToDB(cur, result):
         return
     film_name = result[0]
     av_name = result[1]
+    print('film_name: ' + str(film_name))
     cur.execute('select * from film where title=:Title', {"Title": film_name})
     matchFilm = cur.fetchone()
     product_id = result[4]
     # update product_id only
     if matchFilm != None:
+        print('matchFilm existed!')
         film_ID = result[0]
         print('update film_ID ' + film_ID + ' with ' + product_id)
         update_product_id(cur, product_id, film_ID)
@@ -54,9 +56,27 @@ def updateResultToDB(cur, result):
 
     cur.execute('select film_ID from film where title=:Title', {"Title": film_name})
     matchFilmId = cur.fetchone()
+    # duplicated product_id
+    if matchFilmId == None:
+        print('Duplicated product_id, Skip...')
+        return None
     filmID = None 
     for fid in matchFilmId:
         filmID = fid
+
+    # handle tags
+    filmTags = result[5]
+    if filmTags != None:
+        for filmTag in filmTags:
+            insert_tag(cur, [filmTag])
+            cur.execute('select id from tag where name=:Name', {"Name": filmTag})
+            tagList = cur.fetchone()
+            for tagItem in tagList:
+                if filmID == None:
+                    continue
+                tag_filmId_data = [tagItem, filmID]
+                insert_tag_filmId(cur, tag_filmId_data) 
+
     avID = None
     cur.execute('select av_ID from actress where real_name=:Name', {"Name": av_name})
     print(av_name)
@@ -70,32 +90,20 @@ def updateResultToDB(cur, result):
     if avID != None and filmID != None:
         actress_film_data = [aid, fid]
         insert_actress_film(cur, actress_film_data)
-    # handle tags
-    filmTags = result[5]
-    for filmTag in filmTags:
-        #print(filmTag)
-        insert_tag(cur, [filmTag])
-        cur.execute('select id from tag where name=:Name', {"Name": filmTag})
-        tagList = cur.fetchone()
-        for tagItem in tagList:
-            if filmID == None:
-                continue
-            tag_filmId_data = [tagItem, filmID]
-#print(tag_filmId_data)
-            insert_tag_filmId(cur, tag_filmId_data) 
         
-#    av_real_name = result[1]
-#    cur.execute('select * from actress where real_name=:Name', {"Name": av_real_name})
-#    matchAV = cur.fetchone()
-#    if matchAV == None:
-#        print(av_real_name + ' is not in the DB, create it')
-#        actress_data = [result[0], result[1], result[0]]
-#        print(actress_data)
-#        insert_actress(cur, actress_data)
-#        actressInfo_data = [result[0], result[2], result[3], result[4], result[5], result[6]]
-#        insert_actressInfo(cur, actressInfo_data)
-#    else:
-#        print(av_real_name + 'is in the DB, no need to create')
+def updateIdolResultToDB(cur, result):
+    av_real_name = result[1]
+    cur.execute('select * from actress where real_name=:Name', {"Name": av_real_name})
+    matchAV = cur.fetchone()
+    if matchAV == None:
+        print(av_real_name + ' is not in the DB, create it')
+        actress_data = [result[0], result[1], result[0]]
+        print(actress_data)
+        insert_actress(cur, actress_data)
+        actressInfo_data = [result[0], result[2], result[3], result[4], result[5], result[6]]
+        insert_actressInfo(cur, actressInfo_data)
+    else:
+        print(av_real_name + 'is in the DB, no need to create')
 
 def update_product_id(cur, product_id, film_ID):
     cur.execute('update film set product_id=? where film_ID=?', (product_id, film_ID))
