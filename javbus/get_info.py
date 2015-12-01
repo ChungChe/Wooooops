@@ -6,7 +6,7 @@ import codecs
 import re
 import glob, os
 os.chdir("actress")
-for file in glob.glob(*): 
+for file in glob.glob("*"): 
     f = codecs.open(file, "r", "utf-8")
     if f == None:
         conitnue
@@ -59,5 +59,5 @@ for file in glob.glob(*):
 
                 
 
-    os.rename(file, "/home/pi/avartar/javbus/proceed_actress/" + str(file))
+    os.rename(file, "/home/pi/avartar/javbus/proceed_actress/" + file)
     f.close()
