@@ -1,0 +1,12 @@
+find . -regex '.*\.\(avi\|mp4\|wmv\|mpg\|mpeg\|mkv\|rmvb\|rm\)' -type f -printf "%f\n" > all_hubic_movies
+
+~/bin/clouddrive.js find .avi > ~/amazon_movie
+~/bin/clouddrive.js find .mp4 >> ~/amazon_movie
+~/bin/clouddrive.js find .wmv >> ~/amazon_movie
+~/bin/clouddrive.js find .mpg >> ~/amazon_movie
+~/bin/clouddrive.js find .mpeg >> ~/amazon_movie
+~/bin/clouddrive.js find .mkv >> ~/amazon_movie
+~/bin/clouddrive.js find .rmvb >> ~/amazon_movie
+~/bin/clouddrive.js find .rm >> ~/amazon_movie
+
+cat ~/amazon_movies | awk '{for(i=8;i<=NF;++i)printf("%s ",$i);printf("\n");}' | sort -u > all_amazon_movies
