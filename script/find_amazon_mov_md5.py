@@ -15,6 +15,4 @@ with con:
             continue
         if row[1] == None:
             continue
-        if ".avi" not in row[2]:
-            continue
         print str(row[1]) + ' ' + row[2].encode('utf-8')
