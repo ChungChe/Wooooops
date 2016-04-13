@@ -4,20 +4,19 @@
 
 #include <curl/curl.h>
 #include <string>
+#include <vector>
 #include <sstream>
 
-#include <libxml/HTMLparser.h>
-#include <libxml/HTMLtree.h>
-#include <libxml/tree.h>
-#include <libxml/parser.h>
+#include <Document.h>
+#include <Selection.h>
+#include <Node.h>
 
 struct MemoryStruct {
     char *memory;
     size_t size;
 };
 
-    static size_t
-WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
+static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
     size_t realsize = size * nmemb;
     struct MemoryStruct *mem = (struct MemoryStruct *)userp;
@@ -69,24 +68,43 @@ bool get_url(const std::string& url, std::string& data)
 
     return ret;
 }
-void traverseTree(xmlNode* node)
+
+void get_sub(const std::string& data, const std::string& key, 
+		std::vector<std::string>& sub_content, bool include_tag)
 {
-    xmlNode *cur_node(NULL);
-    xmlAttr* cur_attr(NULL);
-    for (cur_node = node; cur_node; cur_node = cur_node->next) {
-        /*
-        std::string n(std::string(reinterpret_cast<const char*>(cur_node->name)));
-        if (n != std::string("h2")) {
-            continue;
-        }
-        */
-        printf("Tag: %s\n", cur_node->name);
-        for (cur_attr = cur_node->properties; cur_attr; cur_attr = cur_attr->next) {
-            printf(" -> attribute: %s\n", cur_attr->name);
-        }
-        traverseTree(cur_node->children);
-    }
+	CDocument doc;
+	doc.parse(data.c_str());
+	CSelection s = doc.find(key);
+	
+	for (unsigned int i = 0; i < s.nodeNum(); ++i) {
+		CNode node = s.nodeAt(i);
+		if (include_tag) {
+			sub_content.push_back(data.substr(node.startPos(), node.endPos() - node.startPos()));
+		} else {
+			sub_content.push_back(node.text());
+		}
+	}
 }
+
+void get_all_titles(const std::string& data)
+{
+	std::vector<std::string> out;
+	get_sub(data, std::string("h2[class=\"posttitle\"]"), out, false); 
+	for (unsigned int i = 0; i < out.size(); ++i) {
+		printf("%s\n", out[i].c_str());
+	}
+}
+
+void get_info(const std::string& data)
+{
+	std::vector<std::string> out;
+	get_sub(data, std::string("article.full-content"), out, true); 
+	for (unsigned int i = 0; i < out.size(); ++i) {
+		//printf("%s\n", out[i].c_str());
+		get_all_titles(out[i]);
+	}
+}
+
 int main(void)
 {
     for (unsigned int i = 2; i < 3; ++i) {
@@ -96,11 +114,7 @@ int main(void)
         if (!get_url(ss.str(), data)) {
             continue;
         }
-
-        htmlParserCtxtPtr parser = htmlCreatePushParserCtxt(NULL, NULL, NULL, 0, NULL, XML_CHAR_ENCODING_UTF8);
-        htmlParseChunk(parser, data.c_str(), (int)data.size(), 0);
-        traverseTree(xmlDocGetRootElement(parser->myDoc));
-        //printf("data.size = %d\n", (int)data.size());
+		get_info(data);
     } 
     return 0;
 }
