@@ -2,5 +2,5 @@
 if [ $# -ne 1 ]; then
     echo "Need a file path!"
 else
-	python ~/youtube-upload-master/bin/youtube-upload -title="$1" --client-secrets="/home/pi/y.json" --privacy=private $1
+	python ~/youtube-upload-master/bin/youtube-upload --title="$1" --client-secrets="/home/pi/y.json" --privacy=private "$1"
 fi
