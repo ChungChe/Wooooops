@@ -1,1 +1,1 @@
-dd if=dev/zero of=/tmp/output bs=8k count=10k
+dd if=/dev/zero of=/tmp/output_1 bs=8k count=10k; rm -fr /tmp/output_1
