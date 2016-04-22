@@ -1,0 +1,2 @@
+#!/bin/bas
+find . -regex '.*\.\(avi\|mp4\|wmv\|mpg\|mpeg\|mkv\|rmvb\|rm\)' -type f -printf "~/Wooooops/script/youtube_upload '%p'\n" > ~/my_youtube_upload_exe_list
