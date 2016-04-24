@@ -1,0 +1,6 @@
+#!/bin/bash
+echo "ffmpeg -i $1 -vcodec libx264 -crf 19 -profile:v high -r 30 -acodec aac -strict experimental -qscale:a 100 -ar 48000 $1.mp4"
+ffmpeg -i "$1" -vcodec libx264 -crf 19 -profile:v high -r 30 -acodec aac -strict experimental -qscale:a 100 -ar 48000 "$1.mp4"
+if [ -s "$1.mp4" ]; then
+    rm "$1"
+fi 
