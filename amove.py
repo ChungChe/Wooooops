@@ -16,23 +16,30 @@ def move_single_file(file_name, prefix_path):
     abs_from_path = os.path.abspath(file_name)
     abs_to_path = os.path.abspath(prefix_path)
     base_name = ntpath.basename(abs_from_path)
-    print('Abs path: ' + abs_from_path)
+    if base_name == None:
+        print("Error: base name '{}' is empty, from: '{}".format(base_name, file_name))
+        return
+    base = base_name.split('.')[0]
+    if base == None:
+        print("Error: cannot recognize base name '{}'".format(base_name))
+        return
+    #print('Abs path: ' + abs_from_path)
     
     match =  re.match(r'^([A-Z]+)-\d+.*$', base_name)
     if match == None:
         return
-    print('filename: ' + base_name)
+    #print('filename: ' + base_name)
     for product_prefix in match.groups():
         if product_prefix == None:
             return
-        print('product prifix: ' + product_prefix)
+        #print('product prifix: ' + product_prefix)
         # check from
         # prefix_path/S/SHKD/SHKD-548.avi
-        to_path = "{}/{}/{}/{}".format(abs_to_path, product_prefix[0], product_prefix, base_name)
+        to_path = "{}/{}/{}/{}/{}".format(abs_to_path, product_prefix[0], product_prefix, base, base_name)
         if os.path.isfile(to_path):
             print("File exists, abort.")
             return
-        print("move '{}' to '{}'".format(base_name, to_path))
+        print("'{}' -> '{}'".format(abs_from_path, to_path))
 
 def list_folder_files(path):
     if not os.path.exists(path):
