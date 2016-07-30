@@ -1,10 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # mv a file "SHKD-548.avi" to prefix_path/S/SHKD/SHKD-548/SHKD-548.avi
 # mv file to path/file
 import os
 import re
 import sys
 import ntpath
+import scandir
+import errno
 
 def move_single_file(file_name, prefix_path):
     #if not os.path.isfile(file_name):
@@ -42,7 +44,7 @@ def move_single_file(file_name, prefix_path):
         # prefix_path/S/SHKD/SHKD-548/SHKD-548A.avi
         to_path = "{}/{}/{}/{}/{}".format(abs_to_path, product_prefix[0], product_prefix, product_id, base_name)
         if os.path.isfile(to_path):
-            print("File exists, abort.")
+            print("File '{}' exists: in '{}', abort.".format(abs_from_path, to_path))
             return
         if not os.path.exists(abs_from_path):
             print("From file: {} dosn't exist".format(abs_from_path))
@@ -58,8 +60,13 @@ def move_single_file(file_name, prefix_path):
             print("{} already exists, abort.".format(to_path))
             return
         print("'{}' -> '{}'".format(abs_from_path, to_path))
-        os.rename(abs_from_path, to_path) 
-        
+        try:
+            os.rename(abs_from_path, to_path) 
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                print("Exception: file exists")
+            else:
+                raise
 
 def list_folder_files(path):
     if not os.path.exists(path):
@@ -71,12 +78,24 @@ def list_folder_files(path):
             folder_files.append(file_name)
     return folder_files
 
+def scantree(path):
+    if not os.path.exists(path):
+        print('Path not exists: {}'.format(path))
+        return
+    for entry in scandir.scandir(path):
+        if entry.is_dir(follow_symlinks=False):
+            yield from scantree(entry.path)  # see below for Python 2.x
+        else:
+            yield entry
+
 def move_all_files(from_path, to_path):
     print("FROM: {}".format(from_path))
     print("TO: {}".format(to_path))
-    files = list_folder_files(from_path)
-    for file_name in files:
-        move_single_file(from_path + file_name, to_path)
+    #files = list_folder_files(from_path)
+    entries = scantree(from_path)
+    for entry in entries:
+        move_single_file(entry.path, to_path)
+        #move_single_file(from_path + file_name, to_path)
 
 # amove from to
 if len(sys.argv) < 3:
