@@ -65,6 +65,8 @@ def move_single_file(file_name, prefix_path):
         except OSError as e:
             if e.errno == errno.EEXIST:
                 print("Exception: file exists")
+            elif e.errno == 14:
+                print("QQ")
             else:
                 raise
 

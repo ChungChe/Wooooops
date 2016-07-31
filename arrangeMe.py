@@ -6,7 +6,7 @@
 #   It will be moved to /somepath/SNIS
 import glob, os
 import re
-os.chdir("/nas")
+os.chdir("/Volumes/apen")
 for file1 in glob.glob("*"):
     # Exact match
     match = re.match(r'^([A-Z]+)-\d+.*$', file1)
@@ -16,7 +16,7 @@ for file1 in glob.glob("*"):
             print(prefix)
             # moving this file1 to correct place
             # 1. if the folder is not exists, create it
-            path = '/somepath/' + prefix
+            path = '/Volumes/apen/0013Amazon/0013Amazon/' + prefix
             if not os.path.exists(path):
                 os.makedirs(path)
             # 2. move
