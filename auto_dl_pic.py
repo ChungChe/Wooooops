@@ -30,9 +30,11 @@ def scan_jpg(path):
                     hyper_link_path = 'https://www.javbus.com/{}'.format(bn)
                     content = ""
                     try:
-                        content = urllib.request.urlopen(hyper_link_path).read()
-                    except urllib.error.HTTPError as e:
+                        content = u''.join(urllib.request.urlopen(hyper_link_path).read().decode('utf-8'))
+                    #except urllib.error.HTTPError as e:
+                    except Exception:
                         pass
+
                     soup = BeautifulSoup(content)
                     link = soup.find('a', {'class': 'bigImage'})
                     if link == None:
@@ -40,6 +42,8 @@ def scan_jpg(path):
                         continue
                     link_path = link['href']
                     to_path = '/Volumes/wd2/new_cover/{}.jpg'.format(bn) 
+                    if (os.path.exists(to_path)):
+                        continue
                     print("Download '{}' -> '{}".format(link_path, to_path))
                     dl.download_url(link_path, to_path)
 
