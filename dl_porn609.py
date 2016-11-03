@@ -88,6 +88,8 @@ def dl_videos(link):
         ep_num = get_ep_num(soup1)
 
         vid_link = get_final_video_link(each_link)
+        if vid_link == '' or vid_link == None:
+            continue
         # download this vid_link to product_id_1.mp4
         first_file_path = "{}_1.mp4".format(product_ids[idx])
         print("Download {} ...".format(first_file_path))
@@ -100,6 +102,8 @@ def dl_videos(link):
         for i in range(2, ep_num + 1):
             new_link = "{}?ep={}".format(each_link, i)
             vid_link1 = get_final_video_link(new_link)
+            if vid_link1 == '' or vid_link1 == None:
+                continue
             #print(vid_link1)
             to_path = "{}_{}.mp4".format(product_ids[idx], i)
             print("Download {} ...".format(to_path))
