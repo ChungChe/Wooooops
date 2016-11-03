@@ -89,14 +89,23 @@ def dl_videos(link):
 
         vid_link = get_final_video_link(each_link)
         # download this vid_link to product_id_1.mp4
-        
-        dl.download_url(vid_link, "{}_1.mp4".format(product_ids[idx]))
+        first_file_path = "{}_1.mp4".format(product_ids[idx])
+        print("Download {} ...".format(first_file_path))
+        if os.path.exists(first_file_path):
+            print("{} exists, skip".format(first_file_path))
+        else:
+            dl.download_url(vid_link, first_file_path)
 
         #print(vid_link) 
         for i in range(2, ep_num + 1):
             new_link = "{}?ep={}".format(each_link, i)
             vid_link1 = get_final_video_link(new_link)
             #print(vid_link1)
-            dl.download_url(vid_link1, "{}_{}.mp4".format(product_ids[idx], i))
+            to_path = "{}_{}.mp4".format(product_ids[idx], i)
+            print("Download {} ...".format(to_path))
+            if os.path.exists(to_path):
+                print("{} exists, skip".format(to_path))
+            else:
+                dl.download_url(vid_link1, to_path)
 
 dl_videos('http://www.porn609.com/?s=Hoshino+Asuka')
