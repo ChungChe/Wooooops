@@ -8,10 +8,10 @@ def download_url(url, path_to_save):
     content = ""    
     try:
         content = urlopen(req)
+
+        f = open(path_to_save, 'wb')
+        f.write(content.read())
+        f.close()
     except Exception:
         print("Download {} failed".format(path_to_save))
         return
-
-    f = open(path_to_save, 'wb')
-    f.write(content.read())
-    f.close()

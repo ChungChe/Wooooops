@@ -3,7 +3,7 @@ import os
 import sys
 import scandir
 import errno
-# use find . -type d -empty -print | xargs rmdir
+# use find . -type d -empty -print | xargs -0 rmdir
 # Since in acd_cli rmdir will delete non-empty folders
 
 def rm_empty_folder(path):

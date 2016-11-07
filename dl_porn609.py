@@ -2,27 +2,11 @@
 
 
 import os
-import urllib.request
+#import urllib.request
+import climber
 from bs4 import BeautifulSoup
 import download as dl
 
-def get_content(link):
-    content = ""
-    hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'}
-    try:
-        req = urllib.request.Request(link, headers=hdr)
-        with urllib.request.urlopen(req) as response:
-            content = u''.join(response.read().decode('utf-8'))
-    except urllib.error.URLError as e:
-        print("URLError Exception for {}, {}".format(link, e.reason))
-        return
-    except urllib.error.HTTPError as e:
-        print("HTTPError Exception for {}, {}".format(link), e.reason)
-        return
-    except Exception:
-        print("Exception for {}".format(link))
-        return
-    return content
 
 def get_ep_num(soup):
     li_sec = soup.find('div', {'id': 'list_tap'})
@@ -41,7 +25,7 @@ def get_video_page_source_link(soup):
     return link_sec['src']
 
 def get_final_video_link(link):
-    content = get_content(link)
+    content = climber.get_content(link)
     if content == None:
         return
     soup = BeautifulSoup(content)
@@ -49,7 +33,7 @@ def get_final_video_link(link):
         return
     
     iframe_vlink = "http://www.porn609.com/{}".format(get_iframe_video_link(soup))
-    video_page = get_content(iframe_vlink)
+    video_page = climber.get_content(iframe_vlink)
     if video_page == None:
         return
     soup2 = BeautifulSoup(video_page)
@@ -60,7 +44,7 @@ def get_final_video_link(link):
 
 
 def dl_videos(link):
-    content = get_content(link)
+    content = climber.get_content(link)
     if content == None:
         return
     soup = BeautifulSoup(content)
@@ -81,7 +65,7 @@ def dl_videos(link):
         links.append(a_link)
         product_ids.append(product_id)
     for idx, each_link in enumerate(links):
-        content1 = get_content(each_link)
+        content1 = climber.get_content(each_link)
         if content1 == None:
             continue
         soup1 = BeautifulSoup(content1)
@@ -112,4 +96,11 @@ def dl_videos(link):
             else:
                 dl.download_url(vid_link1, to_path)
 
-dl_videos('http://www.porn609.com/?s=Hoshino+Asuka')
+#dl_videos('http://www.porn609.com/?s=Hoshino+Asuka')
+#dl_videos('http://www.porn609.com/?s=Katsuki+Yuuri')
+#dl_videos('http://www.porn609.com/?s=Suzuki+Kiara')
+dl_videos('http://www.porn609.com/?s=Kiyomi+Rei')
+dl_videos('http://www.porn609.com/?s=Shirase+Erina')
+dl_videos('http://www.porn609.com/?s=Kimino+Ayumi')
+dl_videos('http://www.porn609.com/?s=Morikawa+Mau')
+dl_videos('http://www.porn609.com/?s=Ayase+Meru')
