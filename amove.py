@@ -7,6 +7,7 @@ import sys
 import ntpath
 import scandir
 import errno
+import shutil
 
 def move_single_file(file_name, prefix_path):
     #if not os.path.isfile(file_name):
@@ -61,7 +62,10 @@ def move_single_file(file_name, prefix_path):
             return
         print("'{}' -> '{}'".format(abs_from_path, to_path))
         try:
-            os.rename(abs_from_path, to_path) 
+            command = "mv {} {}".format(abs_from_path, to_path)
+            os.system(command)
+            #os.rename(abs_from_path, to_path) 
+            #shutil.move(abs_from_path, to_path)
         except OSError as e:
             if e.errno == errno.EEXIST:
                 print("Exception: file exists")
@@ -69,6 +73,8 @@ def move_single_file(file_name, prefix_path):
                 print("QQ")
             else:
                 raise
+        except Exception:
+            pass
 
 def list_folder_files(path):
     if not os.path.exists(path):
@@ -79,6 +85,15 @@ def list_folder_files(path):
         if os.path.isfile(os.path.join(path, file_name)):
             folder_files.append(file_name)
     return folder_files
+
+def walk(path):
+    file_list = []
+    for path, dirnames, filenames in os.walk(path):
+        for name in filenames:
+            final_name = os.path.abspath(os.path.join(path, name))
+            if os.path.exists(final_name):
+                file_list.append(final_name)
+    return file_list
 
 def scantree(path):
     if not os.path.exists(path):
@@ -95,8 +110,11 @@ def move_all_files(from_path, to_path):
     print("TO: {}".format(to_path))
     #files = list_folder_files(from_path)
     entries = scantree(from_path)
+    #entries = walk(from_path)
+
     for entry in entries:
         move_single_file(entry.path, to_path)
+        #move_single_file(entry, to_path)
         #move_single_file(from_path + file_name, to_path)
 
 # amove from to

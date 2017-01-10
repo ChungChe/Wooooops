@@ -13,6 +13,7 @@ import errno
 import urllib.request
 from bs4 import BeautifulSoup
 import download as dl 
+import html
 def scan_jpg(path):
     if not os.path.exists(path):
         print('Path not exists: {}'.format(path))
@@ -36,17 +37,23 @@ def scan_jpg(path):
                     for gg in match.groups():
                         product_id = gg
                         #print("Check {}".format(product_id))
+                    to_path = '/Volumes/wd2/new_cover/{}.jpg'.format(product_id) 
+                    if (os.path.exists(to_path)):
+                        continue
                     
                     #print("{} doesn't exist, downloading...".format(product_id))
                     hyper_link_path = 'https://www.javbus.com/{}'.format(product_id)
                     content = ""
+                    print("urlopen: {}".format(hyper_link_path))
                     try:
                         content = u''.join(urllib.request.urlopen(hyper_link_path).read().decode('utf-8'))
                     #except urllib.error.HTTPError as e:
                     except Exception:
+                        print("Exception for {}".format(hyper_link_path))
                         pass
 
                     soup = BeautifulSoup(content)
+                    #print("soup.len = {}".format(len(soup)))
                     link = soup.find('a', {'class': 'bigImage'})
                     if link == None:
                         print('Cannot find jpg link from "{}", abort...'.format(product_id))
@@ -56,11 +63,10 @@ def scan_jpg(path):
                         print(debug)
                         continue
                     link_path = link['href']
-                    to_path = '/Volumes/wd2/new_cover/{}.jpg'.format(product_id) 
-                    if (os.path.exists(to_path)):
-                        continue
                     print("Download '{}' -> '{}".format(link_path, to_path))
                     dl.download_url(link_path, to_path)
+                    #wget_command = "wget {} -o {}".format(link_path, to_path)
+                    #os.system(wget_command)
 
 def scan(path):
     print("Try to scan folder: {}".format(path))
