@@ -13,9 +13,9 @@ def get_content(link):
         print("URLError Exception for {}, {}".format(link, e.reason))
         return
     except urllib.error.HTTPError as e:
-        print("HTTPError Exception for {}, {}".format(link), e.reason)
+        print("HTTPError Exception for {}, {}".format(link, e.reason))
         return
-    except Exception:
-        print("Exception for {}".format(link))
+    except Exception as e:
+        print("Exception for {}, {}".format(link, e))
         return
     return content
