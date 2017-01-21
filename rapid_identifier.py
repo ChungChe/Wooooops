@@ -40,7 +40,7 @@ class rapidQQ:
             return None
         l = url['href']
         return l
-
-qq = rapidQQ('your_email', 'your_password')
-url = qq.extract_url('http://rapidgator.net/file/your_file.html')
-print(url)
+if __name__ == "__main__":
+    qq = rapidQQ('your_email', 'your_password')
+    url = qq.extract_url('http://rapidgator.net/file/your_file.html')
+    print(url)
