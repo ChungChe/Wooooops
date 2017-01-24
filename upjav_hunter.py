@@ -6,6 +6,8 @@ import os
 import climber2
 import re
 from bs4 import BeautifulSoup
+from rapid_identifier import rapidQQ
+import var
 
 class upjav_hunter:
     # if db_file_name exists, connect it, otherwise, create it
@@ -15,24 +17,59 @@ class upjav_hunter:
         self.__cur = self.__con.cursor()
         #if not os.path.exists(db_file_name):
         self.create_table_if_not_exists()
+        # rapidQQ no login, just check if the link is valid
+        self.__rapid = rapidQQ()
+        self.__write_db = True 
     def __exit__(self):
         if self.__cur:
             self.__cur.close()
         if self.__con:
             self.__con.close()
+    def update_rapid_link(self):
+        if self.__write_db == False:
+            return
+        self.__cur.execute('select url_id, rapid_link from upjav_table where length(rapid_link) > 7')
+        match = self.__cur.fetchall()
+        for m in match:
+            l = m[1].split(' ')
+            for item in l:
+                if item == ' ' or len(item) == 0:
+                    continue
+                url = self.__rapid.is_link_valid(item)
+                #set field rapid_link to NULL if the path is invalid
+                if url == None:
+                    print('{} is invalid, clear'.format(item))
+                    try:
+                        self.__cur.execute('update upjav_table set rapid_link=null where url_id=:URLID', {"URLID": m[0]})
+                    except Exception as e:
+                        print("Exception in set rapid_link {} to null {}".format(url, e))
+                        if self.__con:
+                            self.__con.rollback()
     def insert(self, packed_data):
+        if self.__write_db == False:
+            return
         try:
-            self.__cur.execute('insert or ignore into upjav_table (url_id, title, actress, cover_link, preview_link, pid, release_date, is_censored, rapid_link) values (?,?,?,?,?,?,?,?,?)', packed_data)
+            self.__cur.execute('insert or ignore into upjav_table (url_id, post_date, title, actress, cover_link, preview_link, pid, release_date, is_censored, rapid_link, available, datetime) values (?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)', packed_data)
             self.__con.commit()
         except Exception as e:
             print("Exception in create_table {}".format(e))
             if self.__con:
                 self.__con.rollback()
+    def is_url_id_exists(self, url_id):
+        try:
+            self.__cur.execute('select url_id from upjav_table where url_id=:URLID', {"URLID": url_id})
+            res = self.__cur.fetchone()
+            if res != None:
+                return True
+        except Exception as e:
+            print("Exception when find url_id '{}' in table".format(url_id))
+        return False
     def create_table_if_not_exists(self):
         try:
             # actress, preview_link and rapid_link may have a list, separate by a space char
             self.__cur.execute("create table if not exists upjav_table (\
                 url_id TEXT NOT NULL PRIMARY KEY, \
+                post_date TEXT, \
                 title TEXT, \
                 actress TEXT, \
                 cover_link TEXT, \
@@ -40,7 +77,9 @@ class upjav_hunter:
                 pid TEXT, \
                 release_date TEXT, \
                 is_censored INTEGER, \
-                rapid_link TEXT \
+                rapid_link TEXT, \
+                available INTEGER, \
+                datetime DATETIME \
             )")
             self.__con.commit()
         except Exception as e:
@@ -59,18 +98,25 @@ class upjav_hunter:
         if content == None:
             return None
         return BeautifulSoup(content, "html.parser")
+    def get_post_info(self, soup):
+        return soup.find('div', {'class': 'post_info'})
+    def get_post_date(self, soup):
+        pdate = soup.find('span', {'class': 'p_date'})
+        return pdate.contents[0]
     def is_censored(self, soup):
-        jav_cat_sec_all = soup.findAll('a', {'rel': 'category tag'})
-        for jav_cat_sec in jav_cat_sec_all:
+        jav_cat_sec = soup.find('a', {'rel': 'category tag'})
+        if jav_cat_sec != None:
             jav_cat = jav_cat_sec.contents[0]
             if jav_cat == "JAV Uncensored":
                 return False
+            elif jav_cat == "JAV IDOL":
+                return True
             elif jav_cat == "JAV Censored":
                 return True
         return None
 
     def get_rapid_links(self, soup):
-        match_list = soup(text=re.compile('http://rapidgator.net/'))
+        match_list = soup(text=re.compile(var.rapid_path))
         return match_list
 
     def get_preview_img_link(self, soup):
@@ -90,11 +136,17 @@ class upjav_hunter:
         title_sec = soup.find('h2', {'class': 'title'}).find('a')
         if title_sec == None:
             return None, None
-        title = title_sec.contents[0]
-        title_link = title_sec['href']
-        if title_link == None:
-            return None, None 
-        return title, title_link
+        try:
+            title = title_sec.contents[0]
+            # remove [FHD] 
+            title = title.replace("[FHD]", "")
+            title_link = title_sec['href']
+            if title_link == None:
+                return None, None 
+            return title, title_link
+        except Exception as e:
+            print("Exception parsing {}, {}".format(title_sec, e))
+            return None, None
     def extract_actress(self, soup):
         entry_sec = soup.find('div', {'class': 'entry'})
         if entry_sec == None:
@@ -109,17 +161,22 @@ class upjav_hunter:
         try:
             l = actress[0].split(' ')
             if len(l) > 1: 
-                actors = l[1]
+                actors = l[1:]
             elif len(l) == 1:
                 ll = actress[0].split(':')
                 if len(ll) > 1:
-                    actors = ll[1]
+                    actors = ll[1:]
                 else:
                     return None
         except Exception as e:
             print("Exception split {}, {}".format(actress[0], e))
-        if actors != None and "—" in actors:
-            actors = None
+        if actors != None:
+            rm_lst = []
+            for a in actors:
+                if "—" in a:
+                    rm_lst.append(a)
+            for r in rm_lst:
+                actors.remove(r)
         return actors
     def extract_date(self, soup):
         entry_sec = soup.find('div', {'class': 'entry'})
@@ -152,102 +209,29 @@ class upjav_hunter:
         # normal pid [AAA-3333]
         if re.match(r'^\[.*-.*\]', t.split()[0]) != None:
             return title.split()[0][1:-1]
+        if re.match(r'^\[.*–.*\]', t.split()[0]) != None:
+            return title.split()[0][1:-1].replace('–', '-')
         # Special handle
-        # SIRO-xxxx
-        if "siro-" in t:
-            tok = title.split(' ')
-            return tok[0]
-        # 200GANA 
-        if "200gana" in t:
-            tok = title.split(' ')
-            return tok[0]
         # S-Cute xxx
         if "s-cute" in t:
             return title.split('#')[0][:-1]
-        # HEYZO
-        if "heyzo" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # Real-diva 
-        if "real-diva" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # Mywife-NO ..."
-        if "mywife-no" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # 1pondo
-        if "1pondo" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # XXX-AV 
-        if "xxx-av" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # Porno-Eigakan 
-        if "porno-eigakan" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # Heydouga 
-        if "heydouga" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # Gachinco 
-        if "gachinco" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # C0930 
-        if "c0930" in  t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # zipang 
-        if "zipang" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # Nyoshin 
-        if "nyoshin" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # Newhalfclub 
-        if "newhalfclub" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # caribbeancom 
-        if "caribbeancom" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # 10musume 
-        if "10musume" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # pacopacomama 
-        if "pacopacomama" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # Asiatengoku 
-        if "asiatengoku" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # Kin8tengoku 
-        if "kin8tengoku" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # Jukujo-club
-        if "jukujo-club" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # Roselip 
-        if "roselip" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # Kt-joker 
-        if "Kt-joker" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # H0930 
-        if "h0930" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
+        tok_2 = ['heyzo', 'real-diva', 'mywife-no', '1pondo', 'xxx-av', 
+            'porno-eigakan', 'heydouga', 'gachinco', '1919gogo', 'c0930',
+            'zipang', 'nyoshin', 'newhalfclub', 'caribbeancom', '10musume',
+            'pacopacomama', 'asiatengoku', 'kin8tengoku', 'jukujo-club', 'roselip',
+            'kt-joker', 'h0930', 'tokyo-hot', 'sm-miracle', 'blacked', 
+            'hegre-a', 'x-art', 'lesshin', 'peepsamurai', 'av-sikou',
+            'jgirl paradise', 'passion-hd', '15-daifuku'
+        ]
+        for e in tok_2:
+            if e in t:
+                tok = title.split(' ')
+                return tok[0] + ' ' + tok[1]
+        tok_1 = ['siro-', '200gana', 'mywife-', '259luxu-']
+        for e in tok_1:
+            if e in t:
+                tok = title.split(' ')
+                return tok[0]
         #"Hdddd kidddd... "
         if re.match(r'^h\d+ ki\d+', t) != None:
             tok = t.split(' ')
@@ -256,37 +240,14 @@ class upjav_hunter:
         if re.match(r'^h\d+ ori\d+', t) != None:
             tok = t.split(' ')
             return tok[0] + ' ' + tok[1]
-        # Tokyo-Hot 
-        if "tokyo-hot" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # SM-miracle 
-        if "sm-miracle" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # BLACKED 
-        if "blacked" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # Hegre-Art 
-        if "hegre-art" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # X-Art 
-        if "x-art" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
-        # Lesshin 
-        if "lesshin" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1]
         # Uncensored-XXX 
         if "uncensored-" in t:
             return title.split(' ')[0].split('Uncensored-')[1]
-        # tokyo hot 
-        if "tokyo hot" in t:
-            tok = title.split(' ')
-            return tok[0] + ' ' + tok[1] + ' ' + tok[2]
+        tok_3 = ['tokyo hot', 'girlsdelta']
+        for e in tok_3:
+            if e in t:
+                tok = title.split(' ')
+                return tok[0] + ' ' + tok[1] + ' ' + tok[2]
         # Real Street Angels xxxx 
         if "real street angels" in t:
             tok = title.split(' ')
@@ -310,8 +271,9 @@ class upjav_hunter:
         print("Max page num = {}".format(max_page_num))
         size_per_page = 40
         count = 0
-        for page_num in range(1, max_page_num + 1):
-            page_link = "http://upjav.org/page/{}".format(page_num) 
+        for page_num in range(256, max_page_num + 1):
+            print("Loading Page {}".format(page_num))
+            page_link = "{}/page/{}".format(var.upjav_path, page_num) 
             tmp_content = climber2.get_content(page_link)
             if tmp_content == None:
                 continue
@@ -326,24 +288,35 @@ class upjav_hunter:
                 title, title_link = self.get_title_and_title_link(post)
                 print("Title: {}".format(title))
                 print("Title Link: {}".format(title_link))
-                
+                if title == None: 
+                    continue
+                url_id = title_link.split("http://upjav.org/")[1][:-1]
+                if self.is_url_id_exists(url_id):
+                    print("URL ID: {} exist, skip".format(url_id))
+                    continue
                 pid = self.extract_pid(title)
                 print("PID: {}".format(pid))
                 cover_link = self.get_cover_link(post)
                 print("Cover : {}".format(cover_link))
-                url_id = title_link.split("http://upjav.org/")[1][:-1]
                 print("URL ID: {}".format(url_id))
                 inner_soup = self.get_inner_soup(title_link)
                 if inner_soup == None:
                     continue
-                actor = self.extract_actress(inner_soup)
-                if actor != None:
-                    print("Actor: {}".format(actor))
+                actors = self.extract_actress(inner_soup)
+                actor_str = ""
+                if actors != None:
+                    for actor in actors:
+                        actor_str += actor + ' '
+                    if actor_str != None:
+                        print("Actor: {}".format(actor_str))
 
                 date = self.extract_date(inner_soup)
                 if date != None:
                     print("Release Date: {}".format(date))
-                is_censored = self.is_censored(inner_soup)
+                post_info = self.get_post_info(inner_soup)
+                is_censored = self.is_censored(post_info)
+                post_date = self.get_post_date(post_info)
+                print("Post Date: {}".format(post_date))
                 censored = 0
                 if is_censored == True:
                     censored = 1
@@ -358,12 +331,22 @@ class upjav_hunter:
                 rapid_links = self.get_rapid_links(inner_soup)
                 rapid_str = ""
                 for l in rapid_links:
+                    # if the link is available
+                    if self.__rapid.is_link_valid(l) == None:
+                        continue
                     rapid_str += l + ' '
                 print("Rapid Str: {}".format(rapid_str))
-                packed_data = [url_id, title, actor, cover_link, preview_str, pid, date, censored, rapid_str]   
+                avail = 0
+                if pid != None and len(pid) > 3 and '-' in pid:
+                    path = '{}/{}/{}/{}'.format(var.acd_sorted_path, pid[0], pid.split('-')[0], pid)
+                    if os.path.exists(path):
+                        avail = 1
+                    
+                packed_data = [url_id, post_date, title, actor_str, cover_link, preview_str, pid, date, censored, rapid_str, avail]   
                 self.insert(packed_data)
                 count += 1
 
 if __name__ == "__main__":
-    u = upjav_hunter("upjav.db")
-    u.scan_top_level("http://upjav.org")
+    u = upjav_hunter("upjav170124.db")
+    #u.update_rapid_link()
+    u.scan_top_level(var.upjav_path)

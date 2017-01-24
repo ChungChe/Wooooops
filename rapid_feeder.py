@@ -1,11 +1,11 @@
 # Rapidgator links to DownloadStation Feeder
 #
 # Given a list of rapidgator file list, feed them into download station
-# When 5 files are feed, wait 10 minutes for the next 5 files
 import sys
 from ds_get import download_station
 from rapid_identifier import rapidQQ
 import time
+import var
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -18,15 +18,17 @@ if __name__ == "__main__":
     except Exception as e:
         print("Exception for {}, {}".format(sys.argv[1], e))
 
-    qq = rapidQQ('rapid_email', 'rapid_passwd')
-    ds = download_station('192.168.0.2', '8888', 'ds_user', 'ds_passwd')
+    qq = rapidQQ(var.rapid_usr, var.rapid_passwd)
+    ds = download_station(var.ds_ip, var.ds_port, var.ds_acct, var.ds_passwd)
     count = 0
     for line in lines:
+        if len(line) == 0:
+            continue
+        print("Processing {} ...".format(line))
         url = qq.extract_url(line)
         if url == None:
             continue
-        ds.download(url, 'destination_folder')
-        count += 1
-        if count == 5:
-            count = 0
-            time.sleep(600)
+        ds.download(url, var.ds_destination_path)
+        print("{} submitted.".format(url))
+        # Wait 6 minutes for 1 file
+        time.sleep(360)
