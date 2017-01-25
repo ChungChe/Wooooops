@@ -29,7 +29,9 @@ class upjav_hunter:
         #            0        1        2         3           4             5
         fields = "post_date, title, actress, cover_link, preview_link, rapid_link"
         #c = "available is 0 and is_censored is 1 and length(rapid_link) > 0"
-        self.__cur.execute('select {} from upjav_table where {}'.format(fields, condition))
+        command = 'select {} from upjav_table where {}'.format(fields, condition)
+        print(command)
+        self.__cur.execute(command)
         match = self.__cur.fetchall()
         match.sort(reverse=True)
         print("{} records found".format(len(match)))
