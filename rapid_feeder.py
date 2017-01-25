@@ -21,6 +21,7 @@ if __name__ == "__main__":
     qq = rapidQQ(var.rapid_usr, var.rapid_passwd)
     ds = download_station(var.ds_ip, var.ds_port, var.ds_acct, var.ds_passwd)
     count = 0
+    incr = 60
     for line in lines:
         if len(line) == 0:
             continue
@@ -30,5 +31,5 @@ if __name__ == "__main__":
             continue
         ds.download(url, var.ds_destination_path)
         print("{} submitted.".format(url))
-        # Wait 6 minutes for 1 file
-        time.sleep(360)
+        time.sleep(incr)
+        incr += 40

@@ -3,14 +3,17 @@ import os
 from bs4 import BeautifulSoup
 import requests
 import sys
+import climber2
+import var
+
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
 class rapidQQ:
-    def __init__(self, user, passwd):
-        
-        self.__h = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'}
-        self.__s = self.rapid_auth(user, passwd)
+    def __init__(self, user=None, passwd=None):
+        if user != None and passwd != None:
+            self.__h = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'}
+            self.__s = self.rapid_auth(user, passwd)
         self.__debug = False 
     def rapid_auth(self, user, passwd):
         s = requests.Session()
@@ -28,19 +31,40 @@ class rapidQQ:
         if self.__debug == True:
             print(content)
         return content
-
+    def is_link_valid(self, url):
+        content = ""
+        try:
+            content = climber2.get_content(url)
+        except Exception as e:
+            print("Exception for {}, {}".format(url, e))
+            return None
+        soup = BeautifulSoup(content, "html.parser")
+        if soup == None:
+            return None
+        sec = soup.find('div', {'class': 'text-block file-descr'})
+        if sec == None:
+            return None
+        url = sec.find('a')
+        if url == None:
+            return None
+        l = url['href']
+        return l
+        
     def extract_url(self, url):
         c = self.rapid_get(url)
         if c == None:
             return None
         soup = BeautifulSoup(c, "html.parser")
         sec = soup.find('div', {'class': 'text-block file-descr'})
+        if sec == None:
+            return None
         url = sec.find('a')
         if url == None:
             return None
         l = url['href']
         return l
 if __name__ == "__main__":
-    qq = rapidQQ('your_email', 'your_password')
-    url = qq.extract_url('http://rapidgator.net/file/your_file.html')
+    qq = rapidQQ()
+    url = qq.is_link_valid(var.rapid_test_link)
     print(url)
+    print(url == None)

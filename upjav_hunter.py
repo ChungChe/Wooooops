@@ -25,10 +25,36 @@ class upjav_hunter:
             self.__cur.close()
         if self.__con:
             self.__con.close()
+    def query(self, condition, output_file = "debug_output"):
+        #            0        1        2         3           4             5
+        fields = "post_date, title, actress, cover_link, preview_link, rapid_link"
+        #c = "available is 0 and is_censored is 1 and length(rapid_link) > 0"
+        self.__cur.execute('select {} from upjav_table where {}'.format(fields, condition))
+        match = self.__cur.fetchall()
+        match.sort(reverse=True)
+        print("{} records found".format(len(match)))
+        with open("{}".format(output_file), 'w') as f:
+            for m in match:
+                f.write("{}\n".format(m))
+        with open("{}.html".format(output_file), 'w') as f:
+            f.write("<html><body>\n")
+            for m in match:
+                f.write("{}<br>\n".format(m[1]))
+                f.write('<img src="{}"></img><br>\n'.format(m[3]))
+                for p in m[4].split(): 
+                    if p == ' ' or len(p) < 2 or p is None:
+                        continue
+                    f.write('<img src="{}"></img><br>\n'.format(p))
+                for r in m[5].split():
+                    if r == ' ' or len(r) < 2 or r is None:
+                        continue
+                    f.write('<a href="{}">{}</a><br>\n'.format(r, r))
+                f.write('<br>\n')
+            f.write("</body></html>\n")
     def update_rapid_link(self):
         if self.__write_db == False:
             return
-        self.__cur.execute('select url_id, rapid_link from upjav_table where length(rapid_link) > 7')
+        self.__cur.execute('select url_id, rapid_link from upjav_table where rapid_link is not null')
         match = self.__cur.fetchall()
         for m in match:
             l = m[1].split(' ')
@@ -49,10 +75,11 @@ class upjav_hunter:
         if self.__write_db == False:
             return
         try:
-            self.__cur.execute('insert or ignore into upjav_table (url_id, post_date, title, actress, cover_link, preview_link, pid, release_date, is_censored, rapid_link, available, datetime) values (?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)', packed_data)
+            q = "(url_id, post_date, title, actress, cover_link, preview_link, pid, release_date, is_censored, rapid_link, available, datetime)"
+            self.__cur.execute('insert or ignore into upjav_table {} values (?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)'.format(q), packed_data)
             self.__con.commit()
         except Exception as e:
-            print("Exception in create_table {}".format(e))
+            print("Exception in insert, {}".format(e))
             if self.__con:
                 self.__con.rollback()
     def is_url_id_exists(self, url_id):
@@ -271,7 +298,7 @@ class upjav_hunter:
         print("Max page num = {}".format(max_page_num))
         size_per_page = 40
         count = 0
-        for page_num in range(256, max_page_num + 1):
+        for page_num in range(811, max_page_num + 1):
             print("Loading Page {}".format(page_num))
             page_link = "{}/page/{}".format(var.upjav_path, page_num) 
             tmp_content = climber2.get_content(page_link)
