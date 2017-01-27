@@ -1,0 +1,30 @@
+{% extends 'nav_bar.html' %}
+{% block title %}
+AVQQ
+{% endblock %}
+{% block content %}
+    <div class="top-pad">
+        <h2>Total {{ packed_data|length }} matched results</h2>
+    </div>
+    {% for data in packed_data %}
+        <div class="top-pad">
+            <div class="well">
+            <h3>{{ data['title'] }}</h3><br>
+            <img src="{{ data['cover_link'] }}"></img><br>
+            
+            {% set preview_link_list = data['preview_link'].split(' ') %}
+            {% for l in preview_link_list %}
+            <img src="{{ l }}"></img><br>
+            {% endfor %}
+            
+            {{ data['actress'] }}<br>
+            
+            {% set rapid_link_list = data['rapid_link'].split(' ') %}
+            {% for l in rapid_link_list %}
+            <a href="{{ l }}">{{ l }}</a><br>
+            {% endfor %}
+            
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}
