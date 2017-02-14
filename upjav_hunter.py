@@ -14,6 +14,7 @@ class upjav_hunter:
     def __init__(self, db_file_name):
         self.__db_name = db_file_name
         self.__con = db.connect(self.__db_name)
+        self.__con.execute("PRAGMA journal_mode=WAL")
         self.__cur = self.__con.cursor()
         #if not os.path.exists(db_file_name):
         self.create_table_if_not_exists()
@@ -25,6 +26,26 @@ class upjav_hunter:
             self.__cur.close()
         if self.__con:
             self.__con.close()
+    def query_data(self, condition):
+        #            0        1        2         3           4             5           6
+        fields = "post_date, title, actress, cover_link, preview_link, rapid_link, available"
+        #c = "available is 0 and is_censored is 1 and length(rapid_link) > 0"
+        command = 'select {} from upjav_table where {}'.format(fields, condition)
+        print("Query data commamd: {}".format(command))
+        self.__cur.execute(command)
+        match = self.__cur.fetchall()
+        #print("Match: '{}'".format(match))
+        if match == None or match == []:
+            return
+        if len(match) == 0:
+            return
+        match.sort(reverse=True)
+
+        names = ['post_date', 'title', 'actress', 'cover_link', 'preview_link' 'rapid_link']
+        dict_list = []
+        for e in match:
+            dict_list.append({'post_date': e[0], 'title': e[1], 'actress': e[2], 'cover_link': e[3], 'preview_link': e[4], 'rapid_link': e[5]})
+        return dict_list 
     def query(self, condition, output_file = "debug_output"):
         #            0        1        2         3           4             5
         fields = "post_date, title, actress, cover_link, preview_link, rapid_link"
@@ -33,11 +54,12 @@ class upjav_hunter:
         print(command)
         self.__cur.execute(command)
         match = self.__cur.fetchall()
+        if match == None:
+            return
+        if len(match) == 0:
+            return
         match.sort(reverse=True)
         print("{} records found".format(len(match)))
-        with open("{}".format(output_file), 'w') as f:
-            for m in match:
-                f.write("{}\n".format(m))
         with open("{}.html".format(output_file), 'w') as f:
             f.write("<html><body>\n")
             for m in match:
@@ -53,6 +75,20 @@ class upjav_hunter:
                     f.write('<a href="{}">{}</a><br>\n'.format(r, r))
                 f.write('<br>\n')
             f.write("</body></html>\n")
+    def update_post_date(self):
+        if self.__write_db == False:
+            return
+        self.__cur.execute('select url_id, post_date from upjav_table')
+        match = self.__cur.fetchall()
+        for m in match:
+            new_date = m[1].replace(".", "-")
+            try:
+                self.__cur.execute('update upjav_table set post_date=:POSTDATE where url_id=:URLID', {"POSTDATE": new_date, "URLID": m[0]})
+            except Exception as e:
+                print("Exception in update_post_date {} {}".format(url_id, e))
+                if self.__con:
+                    self.__con.rollback()
+        self.__con.commit()
     def update_rapid_link(self):
         if self.__write_db == False:
             return
@@ -167,8 +203,9 @@ class upjav_hunter:
             return None, None
         try:
             title = title_sec.contents[0]
-            # remove [FHD] 
+            # remove [FHD], [HD] 
             title = title.replace("[FHD]", "")
+            title = title.replace("[HD]", "")
             title_link = title_sec['href']
             if title_link == None:
                 return None, None 
@@ -300,8 +337,8 @@ class upjav_hunter:
         print("Max page num = {}".format(max_page_num))
         size_per_page = 40
         count = 0
-        for page_num in range(811, max_page_num + 1):
-            print("Loading Page {}".format(page_num))
+        for page_num in range(1, max_page_num + 1):
+            print(" ##################  Loading Page {} ##################".format(page_num))
             page_link = "{}/page/{}".format(var.upjav_path, page_num) 
             tmp_content = climber2.get_content(page_link)
             if tmp_content == None:
@@ -322,7 +359,8 @@ class upjav_hunter:
                 url_id = title_link.split("http://upjav.org/")[1][:-1]
                 if self.is_url_id_exists(url_id):
                     print("URL ID: {} exist, skip".format(url_id))
-                    continue
+                    return
+
                 pid = self.extract_pid(title)
                 print("PID: {}".format(pid))
                 cover_link = self.get_cover_link(post)
@@ -345,6 +383,7 @@ class upjav_hunter:
                 post_info = self.get_post_info(inner_soup)
                 is_censored = self.is_censored(post_info)
                 post_date = self.get_post_date(post_info)
+                post_date.replace(".", "-")
                 print("Post Date: {}".format(post_date))
                 censored = 0
                 if is_censored == True:
@@ -378,4 +417,5 @@ class upjav_hunter:
 if __name__ == "__main__":
     u = upjav_hunter("upjav170124.db")
     #u.update_rapid_link()
-    u.scan_top_level(var.upjav_path)
+    u.update_post_date()
+    #u.scan_top_level(var.upjav_path)

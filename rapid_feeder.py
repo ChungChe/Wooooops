@@ -25,11 +25,11 @@ if __name__ == "__main__":
     for line in lines:
         if len(line) == 0:
             continue
-        print("Processing {} ...".format(line))
+        print("Processing '{}'".format(line))
         url = qq.extract_url(line)
         if url == None:
             continue
         ds.download(url, var.ds_destination_path)
         print("{} submitted.".format(url))
         time.sleep(incr)
-        incr += 40
+        incr += 30

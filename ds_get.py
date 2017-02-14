@@ -12,7 +12,7 @@ class download_station:
         self.__s.headers = hdr
         self.__host = host
         self.__port = port
-        self.__debug = False
+        self.__debug = True
         self.__sid = self.get_session_id(host, port, usr, passwd)
 
     def get_session_id(self, host, port, usr, passwd):
@@ -21,6 +21,8 @@ class download_station:
         # Since I turn off verify, so I deprecate "InsecureRequestWarning" here
         warnings.filterwarnings("ignore")
         resp = self.__s.get(req_get_str, params=p, verify=False)
+        if self.__debug == True:
+            print("Resp: {}".format(resp.content))
         if resp.status_code == 200:
             c = json.loads(resp.content)
             sid = c['data']['sid']
@@ -37,9 +39,11 @@ class download_station:
             print(p)
         req_get_str = 'https://{}:{}/webapi/DownloadStation/task.cgi'.format(self.__host, self.__port)
         resp = self.__s.get(req_get_str, params=p, verify=False)
-        status = json.loads(resp.content)['success']
+        status_all = json.loads(resp.content)
+        status = status_all['success']
         if self.__debug == True:
             print("Status: {}".format(status))
+            print("Status all : {}".format(status_all))
         return status
 
 if __name__ == "__main__":
