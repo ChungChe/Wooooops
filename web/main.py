@@ -1,10 +1,10 @@
 # web interface flask backend
 import sys
 from gevent.wsgi import WSGIServer
-from flask import Flask, render_template, abort, make_response
+from flask import Flask, render_template, abort, make_response, request, json, Response, redirect
 from functools import wraps, update_wrapper
 
-import json
+#import json
 import upjav_hunter as up
 import time
 from datetime import datetime, timedelta
@@ -13,6 +13,8 @@ app = Flask(__name__)
 
 app.config['PROPAGATE_EXCEPTIONS'] = True
 db_name = "upjav170124.db"
+
+avail = 0
 
 def nocache(view):
     @wraps(view)
@@ -28,10 +30,14 @@ def nocache(view):
 
 def search_db(search_string):
     try:
+        global avail
+        print("Avail = {}".format(avail))
         u = up.upjav_hunter(db_name)
         ss = '"%{}%"'.format(search_string)
-        condition = '(pid LIKE {} OR title LIKE {} OR actress LIKE {} OR rapid_link LIKE {}) and length(rapid_link) > 0 and available is 0'.format(ss, ss, ss, ss)
+        condition = '(pid LIKE {} OR title LIKE {} OR actress LIKE {} OR rapid_link LIKE {}) and length(rapid_link) > 0 and available is {}'.format(ss, ss, ss, ss, avail)
         my_dict_list = u.query_data(condition)
+        if my_dict_list == None:
+            return []
         print("{} Matched".format(len(my_dict_list)))
         return my_dict_list
     except Exception as e:
@@ -39,11 +45,13 @@ def search_db(search_string):
 
 def get_recent_post():
     try:
+        global avail
+        print("Avail = {}".format(avail))
         u = up.upjav_hunter(db_name)
          
         today = datetime.now().date()
         five_days_before = today - timedelta(days=5)
-        condition = "post_date between '{}' and '{}' and length(rapid_link) > 0 and available is 0".format(five_days_before, today)
+        condition = "post_date between '{}' and '{}' and length(rapid_link) > 0 and available is {}".format(five_days_before, today, avail)
         my_dict_list = u.query_data(condition)
         if my_dict_list == None or my_dict_list == []:
             return []
@@ -51,20 +59,41 @@ def get_recent_post():
         return my_dict_list
     except Exception as e:
         print("Error: {}".format(e))
+@app.route('/post', methods=['POST'])
+@nocache
+def post():
+    global avail
+    my_json = request.json
+    body = ""
+    if my_json != None:
+        exists = my_json.get('exists')
+        if exists:
+            avail = 1
+        else:
+            avail = 0
+        search_str = my_json.get('search_str')
+        ary1 = {'url': search_str}
+        print(exists, search_str)
+        body = json.dumps(ary1)
+        print("Body: {}".format(body))
+    return Response(body, 200, mimetype = "application/json") 
+    
 
 @app.route('/')
 @nocache
 def home():
-    #my_dict_list = search_db("RION")
     my_dict_list = get_recent_post()
     if my_dict_list == None:
         my_dict_list = []
     return render_template('index.html', packed_data=my_dict_list)
-@app.route('/<path:path>')
+
+@app.route('/search/<string:path>')
 @nocache
 def query(path):
-    if path == 'favicon.ico': 
-        return render_template('index.html', packed_data=[])
+    print("Current path = '{}'".format(path))
+#    if path == 'favicon.ico': 
+#        return render_template('index.html', packed_data=[])
+#    else:    
     my_dict_list = search_db(path)
     if my_dict_list == None:
         my_dict_list = []
