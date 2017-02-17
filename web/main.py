@@ -34,7 +34,8 @@ def search_db(search_string):
         print("Avail = {}".format(avail))
         u = up.upjav_hunter(db_name)
         ss = '"%{}%"'.format(search_string)
-        condition = '(pid LIKE {} OR title LIKE {} OR actress LIKE {} OR rapid_link LIKE {}) and length(rapid_link) > 0 and available is {}'.format(ss, ss, ss, ss, avail)
+        #condition = '(pid LIKE {} OR title LIKE {} OR actress LIKE {} OR rapid_link LIKE {}) and length(rapid_link) > 0 and available is {}'.format(ss, ss, ss, ss, avail)
+        condition = '(pid LIKE {} OR title LIKE {} OR actress LIKE {} OR rapid_link LIKE {}) and available is {}'.format(ss, ss, ss, ss, avail)
         my_dict_list = u.query_data(condition)
         if my_dict_list == None:
             return []
@@ -51,7 +52,8 @@ def get_recent_post():
          
         today = datetime.now().date()
         five_days_before = today - timedelta(days=5)
-        condition = "post_date between '{}' and '{}' and length(rapid_link) > 0 and available is {}".format(five_days_before, today, avail)
+        #condition = "post_date between '{}' and '{}' and length(rapid_link) > 0 and available is {}".format(five_days_before, today, avail)
+        condition = "post_date between '{}' and '{}' and available is {}".format(five_days_before, today, avail)
         my_dict_list = u.query_data(condition)
         if my_dict_list == None or my_dict_list == []:
             return []

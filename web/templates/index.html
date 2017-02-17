@@ -3,28 +3,33 @@
 AVQQ
 {% endblock %}
 {% block content %}
-    <div class="top-pad">
-        <h2>Total {{ packed_data|length }} matched results</h2>
-    </div>
-    {% for data in packed_data %}
-        <div class="top-pad">
-            <div class="well">
-            <h3>{{ data['title'] }}</h3><br>
-            <img src="{{ data['cover_link'] }}"></img><br>
-            
-            {% set preview_link_list = data['preview_link'].split(' ') %}
-            {% for l in preview_link_list %}
-            <img src="{{ l }}"></img><br>
-            {% endfor %}
-            
-            {{ data['actress'] }}<br>
-            
-            {% set rapid_link_list = data['rapid_link'].split(' ') %}
-            {% for l in rapid_link_list %}
-            <a href="{{ l }}">{{ l }}</a><br>
-            {% endfor %}
-            
+        <div class="row">
+        {% for data in packed_data %}
+            <div class="col-sm-6 col-md-4">
+                {% if data['available'] %}
+                <div class="thumbnail">
+                {% else %}
+                <div class="thumbnail" style="background-color: #c1c1c1">
+                {% endif %}
+                    <h4>{{ data['title'] }}</h4>
+                    <div class="col-md-6">Actress: {{ data['actress'] }}</div>
+                    <div class="col-md-6"><span class="pull-right">Date: {{ data['post_date'] }}</span></div>
+                    <img src="{{ data['cover_link'] }}"></img>
+                    <div class="caption">
+                        <div class="thumbnail">
+                        {% set preview_link_list = data['preview_link'].split(' ') %}
+                        {% for l in preview_link_list %}
+                        <img src="{{ l }}"></img>
+                        {% endfor %}
+                        </div>
+                        
+                        {% set rapid_link_list = data['rapid_link'].split(' ') %}
+                        {% for l in rapid_link_list %}
+                        <p><a href="{{ l }}">{{ l }}</a></p>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
+        {% endfor %}
         </div>
-    {% endfor %}
 {% endblock %}

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block container %}
-<nav class="navbar navbar-default">
+<nav class="navbar navbar-default navbar-fixed-top">
   <div class="container-fluid">
     <!-- Brand and toggle get grouped for better mobile display -->
     <div class="navbar-header">
@@ -26,7 +26,9 @@
 
           <input type="text" class="form-control" id="search_text" placeholder="Search">
           <button type="button" class="btn btn-default" id="button_submit">Submit</button>
-        </div>
+          
+          <label>Found {{ packed_data|length }} matched results</label>
+
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
 </nav>
