@@ -24,6 +24,13 @@ class javlib_hunter:
             self.__cur.close()
         if self.__con:
             self.__con.close()
+    def get_match_pids(self, search_str):
+        command = 'select pid, title from vid_table where pid LIKE "%{}%" or title LIKE "%{}%"'.format(search_str, search_str)
+        try:
+            self.__cur.execute(command) 
+            return self.__cur.fetchall()
+        except Exception as e:
+            print("Exception in get match pids {}, {}".format(search_str, e))
     def get_all_nid(self):
         try:
             self.__cur.execute('select nid from nid_table')
@@ -106,7 +113,7 @@ class javlib_hunter:
             self.insert_vid_info(packed_data)
 
     def scan_vid_by_nid(self, nid):
-        link = "http://www.javlibrary.com/tw/vl_star.php?list&mode=&s={}".format(nid)
+        link = "http://www.javlibrary.com/tw/vl_star.php?list&mode=2&s={}".format(nid)
         content = climber2.get_content(link)
         if content == None:
             return

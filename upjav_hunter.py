@@ -7,6 +7,7 @@ import climber2
 import re
 from bs4 import BeautifulSoup
 from rapid_identifier import rapidQQ
+from file_utility import file_holder
 import var
 
 class upjav_hunter:
@@ -21,14 +22,14 @@ class upjav_hunter:
         # rapidQQ no login, just check if the link is valid
         self.__rapid = rapidQQ()
         self.__write_db = True 
+        self.__file_holder = file_holder()
     def __exit__(self):
         if self.__cur:
             self.__cur.close()
         if self.__con:
             self.__con.close()
     def query_data(self, condition):
-        #            0        1        2         3           4             5           6
-        fields = "post_date, title, actress, cover_link, preview_link, rapid_link, available"
+        fields = "post_date, pid, title, actress, cover_link, preview_link, rapid_link, available"
         #c = "available is 0 and is_censored is 1 and length(rapid_link) > 0"
         command = 'select {} from upjav_table where {}'.format(fields, condition)
         print("Query data commamd: {}".format(command))
@@ -39,12 +40,19 @@ class upjav_hunter:
             return
         if len(match) == 0:
             return
+        
         match.sort(reverse=True)
 
-        names = ['post_date', 'title', 'actress', 'cover_link', 'preview_link' 'rapid_link']
+        names = ['post_date', 'pid', 'title', 'actress', 'cover_link', 'preview_link' 'rapid_link']
         dict_list = []
         for e in match:
-            dict_list.append({'post_date': e[0], 'title': e[1], 'actress': e[2], 'cover_link': e[3], 'preview_link': e[4], 'rapid_link': e[5]})
+            is_avial = False
+            if e[1] != None and e[6] != None:
+                is_pid_avial = self.__file_holder.is_file_exists(e[1])
+                rapid_file_name = e[6].split('/')[-1].split(".")[0]
+                is_file_avail = self.__file_holder.is_file_exists(rapid_file_name)
+                is_avial = is_pid_avial | is_file_avail
+            dict_list.append({'post_date': e[0], 'pid': e[1], 'title': e[2], 'actress': e[3], 'cover_link': e[4], 'preview_link': e[5], 'rapid_link': e[6], 'available': is_avial})
         return dict_list 
     def query(self, condition, output_file = "debug_output"):
         #            0        1        2         3           4             5
@@ -113,8 +121,8 @@ class upjav_hunter:
         if self.__write_db == False:
             return
         try:
-            q = "(url_id, post_date, title, actress, cover_link, preview_link, pid, release_date, is_censored, rapid_link, available, datetime)"
-            self.__cur.execute('insert or ignore into upjav_table {} values (?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)'.format(q), packed_data)
+            q = "(url_id, post_date, title, actress, cover_link, preview_link, pid, release_date, is_censored, rapid_link, available, datetime, files)"
+            self.__cur.execute('insert or ignore into upjav_table {} values (?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?)'.format(q), packed_data)
             self.__con.commit()
         except Exception as e:
             print("Exception in insert, {}".format(e))
@@ -144,7 +152,8 @@ class upjav_hunter:
                 is_censored INTEGER, \
                 rapid_link TEXT, \
                 available INTEGER, \
-                datetime DATETIME \
+                datetime DATETIME, \
+                files TEXT \
             )")
             self.__con.commit()
         except Exception as e:
@@ -335,9 +344,8 @@ class upjav_hunter:
             return
         max_page_num = self.get_max_page_num(soup)
         print("Max page num = {}".format(max_page_num))
-        size_per_page = 40
         count = 0
-        for page_num in range(1, max_page_num + 1):
+        for page_num in range(223, max_page_num + 1):
             print(" ##################  Loading Page {} ##################".format(page_num))
             page_link = "{}/page/{}".format(var.upjav_path, page_num) 
             tmp_content = climber2.get_content(page_link)
@@ -357,9 +365,13 @@ class upjav_hunter:
                 if title == None: 
                     continue
                 url_id = title_link.split("http://upjav.org/")[1][:-1]
-                if self.is_url_id_exists(url_id):
-                    print("URL ID: {} exist, skip".format(url_id))
-                    return
+                #if self.is_url_id_exists(url_id):
+                #    sticky = post.find('span', {'class': 'title_sticky'})
+                #    if sticky == None:
+                #        print("URL ID: {} exist, skip".format(url_id))
+                #        return
+                #    else:
+                #        continue
 
                 pid = self.extract_pid(title)
                 print("PID: {}".format(pid))
@@ -383,7 +395,7 @@ class upjav_hunter:
                 post_info = self.get_post_info(inner_soup)
                 is_censored = self.is_censored(post_info)
                 post_date = self.get_post_date(post_info)
-                post_date.replace(".", "-")
+                post_date = post_date.replace(".", "-")
                 print("Post Date: {}".format(post_date))
                 censored = 0
                 if is_censored == True:
@@ -398,10 +410,12 @@ class upjav_hunter:
 
                 rapid_links = self.get_rapid_links(inner_soup)
                 rapid_str = ""
+                files = []
                 for l in rapid_links:
                     # if the link is available
-                    if self.__rapid.is_link_valid(l) == None:
-                        continue
+                    files.append(l.split('/')[-1].split('.')[0])
+                    #if self.__rapid.is_link_valid(l) == None:
+                    #    continue
                     rapid_str += l + ' '
                 print("Rapid Str: {}".format(rapid_str))
                 avail = 0
@@ -409,13 +423,18 @@ class upjav_hunter:
                     path = '{}/{}/{}/{}'.format(var.acd_sorted_path, pid[0], pid.split('-')[0], pid)
                     if os.path.exists(path):
                         avail = 1
-                    
-                packed_data = [url_id, post_date, title, actor_str, cover_link, preview_str, pid, date, censored, rapid_str, avail]   
+                
+                for f in files:
+                    if self.__file_holder.is_file_exists(f):
+                        avail = 1
+                        break
+
+                packed_data = [url_id, post_date, title, actor_str, cover_link, preview_str, pid, date, censored, rapid_str, avail, ' '.join(files)]   
                 self.insert(packed_data)
                 count += 1
 
 if __name__ == "__main__":
-    u = upjav_hunter("upjav170124.db")
+    u = upjav_hunter("upjav170218.db")
     #u.update_rapid_link()
-    u.update_post_date()
-    #u.scan_top_level(var.upjav_path)
+    #u.update_post_date()
+    u.scan_top_level(var.upjav_path)
