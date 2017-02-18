@@ -32,23 +32,22 @@ class rapidQQ:
             print(content)
         return content
     def is_link_valid(self, url):
-        content = ""
         try:
             content = climber2.get_content(url)
+            soup = BeautifulSoup(content, "html.parser")
+            if soup == None:
+                return None
+            sec = soup.find('div', {'class': 'text-block file-descr'})
+            if sec == None:
+                return None
+            url = sec.find('a')
+            if url == None:
+                return None
+            l = url['href']
+            return l
         except Exception as e:
             print("Exception for {}, {}".format(url, e))
             return None
-        soup = BeautifulSoup(content, "html.parser")
-        if soup == None:
-            return None
-        sec = soup.find('div', {'class': 'text-block file-descr'})
-        if sec == None:
-            return None
-        url = sec.find('a')
-        if url == None:
-            return None
-        l = url['href']
-        return l
         
     def extract_url(self, url):
         c = self.rapid_get(url)

@@ -5,7 +5,32 @@ import sys
 import scandir
 import sqlite3 as db
 
+reload(sys)
+sys.setdefaultencoding('utf-8')
+
 class file_holder:
+    def to_gb_str(self, val):
+        return float(val) / 1073741824
+    def show_possible_match(self, search_str, show_path=False):
+        command = 'select name, file_size, full_path from files where name LIKE "%{}%" or full_path LIKE "%{}%"'.format(search_str, search_str)
+        try:
+            self.__cur.execute(command)
+            match = self.__cur.fetchall()
+            if match == []:
+                print('Not Found')
+                return
+            total_size = 0
+            match.sort()
+            for m in match:
+                total_size += m[1]
+                if show_path == False:
+                    print("{:7.2f} GB   {} ".format(self.to_gb_str(m[1]), m[0]))
+                else:
+                    print("{:7.2f} GB   {} {}".format(self.to_gb_str(m[1]), m[0], m[2]))
+            print('===== records: {}, total: {:.2f} GB ========================'.format(len(match), self.to_gb_str(total_size)))
+        except Exception as e:
+            print("Exception in search {}, {}".format(search_str, e))
+
     def is_file_exists(self, file_name):
         self.__cur.execute('select name from files where name=:NAME COLLATE NOCASE', {'NAME': file_name})
         match = self.__cur.fetchall()
@@ -54,7 +79,7 @@ class file_holder:
                     if not self.is_mov_format(ext):
                         continue
                     #print(fn)
-                    packed_data = [base, ext, size, entry.path]
+                    packed_data = [base.decode('utf-8'), ext, size, entry.path.decode('utf-8')]
                     print(packed_data)
                     self.insert(packed_data)
                 except Exception as e:
