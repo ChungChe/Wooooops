@@ -1,6 +1,6 @@
 {% extends 'nav_bar.html' %}
 {% block title %}
-AVQQ
+<br>
 {% endblock %}
 {% block content %}
         <div class="row">
@@ -23,8 +23,12 @@ AVQQ
                         {% endfor %}
                         </div>
                         
-                        {% set rapid_link_list = data['rapid_link'].split(' ') %}
+                        {% set rapid_link_list = data['rapid_link'].split(' ')[:-1] %}
                         {% for l in rapid_link_list %}
+                            {% if data['available'] %}
+                            {% else %}
+                                <button type="button" class="btn btn-success dl_button" id="{{ data['pid'] }}">Download {{ l.split('/')[-1].split('.')[0] }}</button>
+                            {% endif %}
                         <p><a href="{{ l }}">{{ l }}</a></p>
                         {% endfor %}
                     </div>

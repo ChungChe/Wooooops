@@ -12,6 +12,26 @@ function redirect_url(search_str) {
     });
 }
 
+function submit(ptr) {
+    $.ajax({
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            "pid" : ptr.id 
+            }),
+        dataType: 'json',
+        url: '/submit',
+        success: function(data) {
+            ptr.remove()
+            console.log('Success ' + ptr.id);
+        },
+        error: function(error) {
+            console.log('error');
+            console.log(eval(error));
+        }
+    });
+}
+
 function post_data() {
     $.ajax({
         type: 'POST',
@@ -23,8 +43,6 @@ function post_data() {
         dataType: 'json',
         url: '/post',
         success: function(data) {
-            console.log(data);
-            console.log('Success');
             redirect_url('/search/' + data['url']);
         },
         error: function(error) {
@@ -50,6 +68,10 @@ $(function() {
         }
     });
 
-
+    $('.dl_button').click(function() {
+        console.log("Click Download with " + this.id);
+        submit(this)
+        //this.remove()
+    });
 
 })

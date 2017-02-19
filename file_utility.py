@@ -5,6 +5,7 @@ import sys
 import scandir
 import sqlite3 as db
 from javlib import javlib_hunter
+import timeit
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -13,8 +14,15 @@ class file_holder:
     def to_gb_str(self, val):
         return float(val) / 1073741824
     def show(self, search_str):
+
+        s_con = timeit.default_timer()
         u = javlib_hunter("javlib70218.db")
+        e_con = timeit.default_timer()
+        
+        s_match = timeit.default_timer()
         match = u.get_match_pids(search_str)
+        e_match = timeit.default_timer()
+        
         ret = []
         #match.sort()
         count = 0
@@ -22,6 +30,14 @@ class file_holder:
         not_avail_list = []
 
         skip_items = []
+
+        
+        s_poss = timeit.default_timer()
+        matched_files = self.get_possible_match(search_str)
+        e_poss = timeit.default_timer()
+        
+        
+        s_keep = timeit.default_timer()
         matched_files = self.get_possible_match(search_str)
         # Keep exist files for skip
         for m in matched_files:
@@ -38,15 +54,19 @@ class file_holder:
         for m in match:
             pid = m[0]
             title = m[1]
+            release_date = m[2]
             if not self.is_file_exists(pid):
-                not_avail_list.append(m[1])
+                #not_avail_list.append('{}  {}'.format(release_date, title))
+                not_avail_list.append('{}  {}'.format(title, release_date))
                 continue
             size = self.get_file_size(pid)
-            tup_list.append((title, size))
+            tup_list.append(('{}  {}'.format(title, release_date), size))
 
             count += 1
             total_size += int(size)
         tup_list.sort()
+        
+        e_keep = timeit.default_timer()
         # display
         for t in tup_list:
             print("{:7.2f} GB   {}".format(self.to_gb_str(t[1]), t[0]))
@@ -54,11 +74,17 @@ class file_holder:
             print('===== records available: {}, total: {:.2f} GB ========================'.format(len(tup_list), self.to_gb_str(total_size)))
         else:
             print("Not Found")
+        not_avail_list.sort()
         for i in not_avail_list:
             print(i)
         if len(not_avail_list) > 0:
             print('===== records not available: {} ========================'.format(len(not_avail_list)))
-    
+        print('''
+                con = {}
+                match = {}
+                poss = {}
+                keep = {}
+              '''.format(e_con - s_con, e_match - s_match, e_poss - s_poss, e_keep - s_keep))
     def get_possible_match(self, search_str):
         command = 'select name, file_size, full_path from files where name LIKE "%{}%" or full_path LIKE "%{}%"'.format(search_str, search_str)
         try:

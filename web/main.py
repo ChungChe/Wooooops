@@ -7,12 +7,13 @@ from functools import wraps, update_wrapper
 #import json
 import upjav_hunter as up
 import time
+import timeit
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
 app.config['PROPAGATE_EXCEPTIONS'] = True
-db_name = "upjav170124.db"
+db_name = "upjav170218.db"
 
 avail = 0
 
@@ -51,16 +52,30 @@ def get_recent_post():
         u = up.upjav_hunter(db_name)
          
         today = datetime.now().date()
-        five_days_before = today - timedelta(days=5)
+        five_days_before = today - timedelta(days=1)
         #condition = "post_date between '{}' and '{}' and length(rapid_link) > 0 and available is {}".format(five_days_before, today, avail)
-        condition = "post_date between '{}' and '{}' and available is {}".format(five_days_before, today, avail)
+        #condition = "post_date between '{}' and '{}' and available is {}".format(five_days_before, today, avail)
+        condition = "post_date between '{}' and '{}'".format(five_days_before, today)
+        start = timeit.default_timer()
         my_dict_list = u.query_data(condition)
+        end = timeit.default_timer()
+        print("Query takes {} seconds".format(end - start))
         if my_dict_list == None or my_dict_list == []:
             return []
         print("{} Matched".format(len(my_dict_list)))
         return my_dict_list
     except Exception as e:
         print("Error: {}".format(e))
+@app.route('/submit', methods=['POST'])
+@nocache
+def submit():
+    my_json = request.json
+    body = "{}"
+    if my_json != None:
+        pid = my_json.get('pid')
+        print("Get PID from client '{}'".format(pid))
+    return Response(body, 200, mimetype = "application/json")
+
 @app.route('/post', methods=['POST'])
 @nocache
 def post():

@@ -25,7 +25,7 @@ class javlib_hunter:
         if self.__con:
             self.__con.close()
     def get_match_pids(self, search_str):
-        command = 'select pid, title from vid_table where pid LIKE "%{}%" or title LIKE "%{}%"'.format(search_str, search_str)
+        command = 'select pid, title, release_date from vid_table where title LIKE "%{}%"'.format(search_str, search_str)
         try:
             self.__cur.execute(command) 
             return self.__cur.fetchall()

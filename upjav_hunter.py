@@ -28,6 +28,9 @@ class upjav_hunter:
             self.__cur.close()
         if self.__con:
             self.__con.close()
+    def is_file_exists(self, search_str):
+        return self.__file_holder.is_file_exists(search_str)
+
     def query_data(self, condition):
         fields = "post_date, pid, title, actress, cover_link, preview_link, rapid_link, available"
         #c = "available is 0 and is_censored is 1 and length(rapid_link) > 0"
@@ -48,9 +51,9 @@ class upjav_hunter:
         for e in match:
             is_avial = False
             if e[1] != None and e[6] != None:
-                is_pid_avial = self.__file_holder.is_file_exists(e[1])
+                is_pid_avial = self.is_file_exists(e[1])
                 rapid_file_name = e[6].split('/')[-1].split(".")[0]
-                is_file_avail = self.__file_holder.is_file_exists(rapid_file_name)
+                is_file_avail = self.is_file_exists(rapid_file_name)
                 is_avial = is_pid_avial | is_file_avail
             dict_list.append({'post_date': e[0], 'pid': e[1], 'title': e[2], 'actress': e[3], 'cover_link': e[4], 'preview_link': e[5], 'rapid_link': e[6], 'available': is_avial})
         return dict_list 
@@ -345,7 +348,7 @@ class upjav_hunter:
         max_page_num = self.get_max_page_num(soup)
         print("Max page num = {}".format(max_page_num))
         count = 0
-        for page_num in range(223, max_page_num + 1):
+        for page_num in range(1, max_page_num + 1):
             print(" ##################  Loading Page {} ##################".format(page_num))
             page_link = "{}/page/{}".format(var.upjav_path, page_num) 
             tmp_content = climber2.get_content(page_link)
@@ -365,13 +368,13 @@ class upjav_hunter:
                 if title == None: 
                     continue
                 url_id = title_link.split("http://upjav.org/")[1][:-1]
-                #if self.is_url_id_exists(url_id):
-                #    sticky = post.find('span', {'class': 'title_sticky'})
-                #    if sticky == None:
-                #        print("URL ID: {} exist, skip".format(url_id))
-                #        return
-                #    else:
-                #        continue
+                if self.is_url_id_exists(url_id):
+                    sticky = post.find('span', {'class': 'title_sticky'})
+                    if sticky == None:
+                        print("URL ID: {} exist, skip".format(url_id))
+                        return
+                    else:
+                        continue
 
                 pid = self.extract_pid(title)
                 print("PID: {}".format(pid))
@@ -425,7 +428,7 @@ class upjav_hunter:
                         avail = 1
                 
                 for f in files:
-                    if self.__file_holder.is_file_exists(f):
+                    if self.is_file_exists(f):
                         avail = 1
                         break
 
