@@ -17,17 +17,21 @@ function submit(ptr) {
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({
-            "pid" : ptr.id 
+            "url_id" : ptr.id 
             }),
         dataType: 'json',
         url: '/submit',
         success: function(data) {
-            ptr.remove()
+            console.log(data['results']);
             console.log('Success ' + ptr.id);
+            //$('#loading-indicator').remove()
+            ptr.remove();
+
         },
         error: function(error) {
             console.log('error');
             console.log(eval(error));
+            //ptr.remove('.waiting_logo')
         }
     });
 }
@@ -70,8 +74,19 @@ $(function() {
 
     $('.dl_button').click(function() {
         console.log("Click Download with " + this.id);
+        $(this).append('<img src="/static/images/loading.gif" id="loading-indicator" style="display:none" />');
         submit(this)
         //this.remove()
     });
 
 })
+
+$(document).ajaxSend(function(e, r, s) {
+    console.log('ajax send');
+    $('#loading-indicator').show();
+});
+
+$(document).ajaxComplete(function(e, r, s) {
+    console.log('ajax complete');
+    $('#loading-indicator').hide();
+});

@@ -27,9 +27,9 @@
                         {% for l in rapid_link_list %}
                             {% if data['available'] %}
                             {% else %}
-                                <button type="button" class="btn btn-success dl_button" id="{{ data['pid'] }}">Download {{ l.split('/')[-1].split('.')[0] }}</button>
+                                <button type="button" class="btn btn-success dl_button" id="{{ data['url_id'] }}">Download {{ l.split('/')[-1].split('.')[0] }}</button>
                             {% endif %}
-                        <p><a href="{{ l }}">{{ l }}</a></p>
+                        <!--<p><a href="{{ l }}">{{ l }}</a></p> -->
                         {% endfor %}
                     </div>
                 </div>

@@ -1,7 +1,8 @@
 # web interface flask backend
 import sys
 from gevent.wsgi import WSGIServer
-from flask import Flask, render_template, abort, make_response, request, json, Response, redirect
+import werkzeug.serving
+from flask import Flask, render_template, abort, make_response, request, json, Response, redirect, jsonify
 from functools import wraps, update_wrapper
 
 #import json
@@ -9,6 +10,10 @@ import upjav_hunter as up
 import time
 import timeit
 from datetime import datetime, timedelta
+from rapid_identifier import rapidQQ
+from ds_get import download_station
+
+import var
 
 app = Flask(__name__)
 
@@ -35,8 +40,8 @@ def search_db(search_string):
         print("Avail = {}".format(avail))
         u = up.upjav_hunter(db_name)
         ss = '"%{}%"'.format(search_string)
-        #condition = '(pid LIKE {} OR title LIKE {} OR actress LIKE {} OR rapid_link LIKE {}) and length(rapid_link) > 0 and available is {}'.format(ss, ss, ss, ss, avail)
-        condition = '(pid LIKE {} OR title LIKE {} OR actress LIKE {} OR rapid_link LIKE {}) and available is {}'.format(ss, ss, ss, ss, avail)
+        #condition = '(url_id LIKE {} OR title LIKE {} OR actress LIKE {} OR rapid_link LIKE {}) and length(rapid_link) > 0 and available is {}'.format(ss, ss, ss, ss, avail)
+        condition = '(url_id LIKE {} OR title LIKE {} OR actress LIKE {} OR rapid_link LIKE {}) and available is {}'.format(ss, ss, ss, ss, avail)
         my_dict_list = u.query_data(condition)
         if my_dict_list == None:
             return []
@@ -52,7 +57,7 @@ def get_recent_post():
         u = up.upjav_hunter(db_name)
          
         today = datetime.now().date()
-        five_days_before = today - timedelta(days=1)
+        five_days_before = today - timedelta(days=3)
         #condition = "post_date between '{}' and '{}' and length(rapid_link) > 0 and available is {}".format(five_days_before, today, avail)
         #condition = "post_date between '{}' and '{}' and available is {}".format(five_days_before, today, avail)
         condition = "post_date between '{}' and '{}'".format(five_days_before, today)
@@ -70,11 +75,34 @@ def get_recent_post():
 @nocache
 def submit():
     my_json = request.json
-    body = "{}"
-    if my_json != None:
-        pid = my_json.get('pid')
-        print("Get PID from client '{}'".format(pid))
-    return Response(body, 200, mimetype = "application/json")
+    status_list = []
+    if my_json == None:
+        return jsonify(results=status_list)
+    url_id = my_json.get('url_id')
+    print("Get url_id from client '{}'".format(url_id))
+    u = up.upjav_hunter(db_name)
+    link = u.get_rapid_link_by_url_id(url_id)
+    if link == None:
+        return jsonify(results=status_list)
+    qq = rapidQQ(var.rapid_usr, var.rapid_passwd)
+    ds = download_station(var.ds_ip, var.ds_port, var.ds_acct, var.ds_passwd)
+    for l in link[0][0].split(' '):
+        if l == ' ' or l == '':
+            continue
+        print(l)
+        if qq.is_link_valid(l) == False:
+            status_list.append('URL not found')
+            continue
+        url = qq.extract_url(l)
+        if url == None:
+            status_list.append('URL not found')
+            continue
+        print("URL={}".format(url))
+        status = ds.download(url, var.ds_destination_path)
+        status_list.append(status)
+    
+    return jsonify(results=status_list)
+    #return Response(body, 200, mimetype = "application/json")
 
 @app.route('/post', methods=['POST'])
 @nocache
@@ -115,7 +143,11 @@ def query(path):
     if my_dict_list == None:
         my_dict_list = []
     return render_template('index.html', packed_data=my_dict_list)
-
-if __name__ == '__main__':
+@werkzeug.serving.run_with_reloader
+@nocache
+def runServer():
+    files = ['main.py']
     http_server = WSGIServer(('', 9487), app)
     http_server.serve_forever()
+if __name__ == '__main__':
+    runServer()
