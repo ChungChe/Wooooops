@@ -25,13 +25,17 @@ function submit(ptr) {
             console.log(data['results']);
             console.log('Success ' + ptr.id);
             //$('#loading-indicator').remove()
-            ptr.remove();
+            $(ptr).text(data['results']);
+            $(ptr).prop('diabled', true);
+            //ptr.remove();
 
         },
         error: function(error) {
             console.log('error');
             console.log(eval(error));
             //ptr.remove('.waiting_logo')
+            $(ptr).text(eval(error));
+            $(ptr).prop('diabled', true);
         }
     });
 }
@@ -76,6 +80,7 @@ $(function() {
         console.log("Click Download with " + this.id);
         $(this).append('<img src="/static/images/loading.gif" id="loading-indicator" style="display:none" />');
         submit(this)
+        $(this).attr('diabled', true);
         //this.remove()
     });
 

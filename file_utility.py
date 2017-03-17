@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Scan folder Sorted/
 
 import os
@@ -13,15 +14,10 @@ sys.setdefaultencoding('utf-8')
 class file_holder:
     def to_gb_str(self, val):
         return float(val) / 1073741824
-    def show(self, search_str):
-
-        s_con = timeit.default_timer()
+    def pre_show(self, search_str, show_full_path=False):
         u = javlib_hunter("javlib70218.db")
-        e_con = timeit.default_timer()
         
-        s_match = timeit.default_timer()
         match = u.get_match_pids(search_str)
-        e_match = timeit.default_timer()
         
         ret = []
         #match.sort()
@@ -30,15 +26,10 @@ class file_holder:
         not_avail_list = []
 
         skip_items = []
-
         
-        s_poss = timeit.default_timer()
         matched_files = self.get_possible_match(search_str)
-        e_poss = timeit.default_timer()
         
-        
-        s_keep = timeit.default_timer()
-        matched_files = self.get_possible_match(search_str)
+        #matched_files = self.get_possible_match(search_str)
         # Keep exist files for skip
         for m in matched_files:
             for i in match:
@@ -48,7 +39,10 @@ class file_holder:
         for m in matched_files:
             if m in skip_items:
                 continue
-            tup_list.append((m[0], m[1])) # title, size
+            if show_full_path == True:
+                tup_list.append((m[0], m[1], m[2])) # title, size, [full_path]
+            else:
+                tup_list.append((m[0], m[1])) # title, size, [full_path]
             total_size += m[1]
 
         for m in match:
@@ -65,11 +59,15 @@ class file_holder:
             count += 1
             total_size += int(size)
         tup_list.sort()
-        
-        e_keep = timeit.default_timer()
+        return tup_list, not_avail_list, total_size
+    def show(self, search_str, show_full_path = False):
+        tup_list, not_avail_list, total_size = self.pre_show(search_str, show_full_path)
         # display
         for t in tup_list:
-            print("{:7.2f} GB   {}".format(self.to_gb_str(t[1]), t[0]))
+            if show_full_path == True and len(t) == 3:
+                print("{:7.2f} GB   {} {}".format(self.to_gb_str(t[1]), t[0], t[2]))
+            else:
+                print("{:7.2f} GB   {}".format(self.to_gb_str(t[1]), t[0]))
         if len(tup_list) > 0:
             print('===== records available: {}, total: {:.2f} GB ========================'.format(len(tup_list), self.to_gb_str(total_size)))
         else:
@@ -79,12 +77,6 @@ class file_holder:
             print(i)
         if len(not_avail_list) > 0:
             print('===== records not available: {} ========================'.format(len(not_avail_list)))
-        print('''
-                con = {}
-                match = {}
-                poss = {}
-                keep = {}
-              '''.format(e_con - s_con, e_match - s_match, e_poss - s_poss, e_keep - s_keep))
     def get_possible_match(self, search_str):
         command = 'select name, file_size, full_path from files where name LIKE "%{}%" or full_path LIKE "%{}%"'.format(search_str, search_str)
         try:
@@ -172,13 +164,14 @@ class file_holder:
                     print("Exception in scan {}, {}".format(entry.path, e))
                     continue
     def is_mov_format(self, file_name):
-        f = ['mp4', 'wmv', 'avi', 'mov', 'mpg', 'mpeg', 'mkv', 'rmvb', 'rm', 'flv', 'm4v', 'asf']
+        f = ['mp4', 'wmv', 'avi', 'mov', 'mpg', 'mpeg', 'mkv', 'rmvb', 'rm', 'flv', 'm4v', 'asf', 'divx']
+        file_name_lower = file_name.lower()
         for e in f:
-            if e in file_name:
+            if e in file_name_lower:
                 return True
         return False
     def scan_all(self, path):
-        entries = self.scan(full_path)
+        entries = self.scan(path)
         for entry in entries:
             pass
     def __init__(self, path=None):

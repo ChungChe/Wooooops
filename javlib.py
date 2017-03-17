@@ -111,7 +111,23 @@ class javlib_hunter:
             print("{} {} {}".format(pid, title, release_date)) 
             packed_data = [pid, title, release_date]
             self.insert_vid_info(packed_data)
-
+    def scan_str(self, scan_str):
+        link = "http://www.javlibrary.com/tw/{}.php?list&mode=2&".format(scan_str)
+        content = climber2.get_content(link)
+        if content == None:
+            return
+        soup = BeautifulSoup(content, "html.parser")
+        if soup == None:
+            return
+        max_page_num = self.get_max_page_num(soup)
+        
+        print("Max page num = {}".format(max_page_num))
+        if max_page_num == None: # no extra page
+            self.scan_vid_info(link)
+        else: 
+            for page_num in range(1, max_page_num + 1):
+                page_link = "{}&page={}".format(link, page_num) 
+                self.scan_vid_info(page_link)
     def scan_vid_by_nid(self, nid):
         link = "http://www.javlibrary.com/tw/vl_star.php?list&mode=2&s={}".format(nid)
         content = climber2.get_content(link)
@@ -155,7 +171,7 @@ class javlib_hunter:
 
     # www.javlibrary.com/tw/star_list.php?prefix=A to Z
     def scan_all_star(self):
-        for l in range(ord('B'), ord('Z')):
+        for l in range(ord('A'), ord('Z')):
             print(chr(l))
             link = 'http://www.javlibrary.com/tw/star_list.php?prefix={}'.format(chr(l))
             content = climber2.get_content(link)
@@ -179,4 +195,6 @@ if __name__ == "__main__":
     #u.update_post_date()
     #u.scan_all_star()
     #u.scan_vid_by_nid('oy6a')
-    u.scan_all_nid_videos()
+    #u.scan_all_nid_videos()
+    u.scan_str("vl_newrelease")
+    #u.scan_str("vl_update")
