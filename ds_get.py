@@ -12,7 +12,7 @@ class download_station:
         self.__s.headers = hdr
         self.__host = host
         self.__port = port
-        self.__debug = True
+        self.__debug = True 
         self.__sid = self.get_session_id(host, port, usr, passwd)
 
     def get_session_id(self, host, port, usr, passwd):
@@ -41,9 +41,26 @@ class download_station:
         resp = self.__s.get(req_get_str, params=p, verify=False)
         status_all = json.loads(resp.content)
         status = status_all['success']
+        #code = status_all['error']
+        #print('Code: {}'.format(code))
+        print('Status all: {}'.format(status_all))
         if self.__debug == True:
-            print("Status: {}".format(status))
-            print("Status all : {}".format(status_all))
+            if status == True: 
+                print("Status: {}".format(status))
+            else:
+                print("Status: {}".format(status))
+                
+                #r = {'400':  'File upload failed', '401': 'Max number of tasks reached', '402':  'Destination denied', '403': 'Destination does not exist', '404': 'Invalid task id', '405': 'Invalid task action', '406': 'No default destination', '407': 'Set destination failed', '408': 'File does not exist'}
+                #print("Status: {}, reason: {}".format(status, r[code]))
+            #print("Status all : {}".format(status_all))
+
+        # logout
+        p_out = {'api': 'SYNO.API.Auth', 'version': 1, 'method': 'logout', 'session' : 'DownloadStation'}
+        logout_str = 'https://{}:{}/webapi/auth.cpi'.format(self.__host, self.__port)
+        resp_out = self.__s.get(logout_str, params=p_out, verify=False)
+        #print(resp_out)
+        #status_out = json.loads(resp_out.content)
+        #print(status_out)
         return status
 
 if __name__ == "__main__":

@@ -6,19 +6,20 @@ from flask import Flask, render_template, abort, make_response, request, json, R
 from functools import wraps, update_wrapper
 
 #import json
-import upjav_hunter as up
+#import upjav_hunter as up
+import javip_hunter as up
 import time
 import timeit
 from datetime import datetime, timedelta
 from rapid_identifier import rapidQQ
 from ds_get import download_station
-
 import var
 
 app = Flask(__name__)
 
 app.config['PROPAGATE_EXCEPTIONS'] = True
-db_name = "upjav170218.db"
+#db_name = "upjav170218.db"
+db_name = "javip.db"
 
 avail = 0
 
@@ -38,7 +39,8 @@ def search_db(search_string):
     try:
         global avail
         print("Avail = {}".format(avail))
-        u = up.upjav_hunter(db_name)
+        #u = up.upjav_hunter(db_name)
+        u = up.javip_hunter(db_name)
         ss = '"%{}%"'.format(search_string)
         #condition = '(url_id LIKE {} OR title LIKE {} OR actress LIKE {} OR rapid_link LIKE {}) and length(rapid_link) > 0 and available is {}'.format(ss, ss, ss, ss, avail)
         condition = '(url_id LIKE {} OR title LIKE {} OR actress LIKE {} OR rapid_link LIKE {}) and available is {}'.format(ss, ss, ss, ss, avail)
@@ -54,7 +56,8 @@ def get_recent_post():
     try:
         global avail
         print("Avail = {}".format(avail))
-        u = up.upjav_hunter(db_name)
+        #u = up.upjav_hunter(db_name)
+        u = up.javip_hunter(db_name)
          
         today = datetime.now().date()
         five_days_before = today - timedelta(days=3)
@@ -71,6 +74,24 @@ def get_recent_post():
         return my_dict_list
     except Exception as e:
         print("Error: {}".format(e))
+@app.route('/dl', methods=['GET'])
+def dl():
+    url = request.args.get('link')
+    qq = rapidQQ(var.rapid_usr, var.rapid_passwd)
+    ds = download_station(var.ds_ip, var.ds_port, var.ds_acct, var.ds_passwd)
+     
+    status_list = []
+    if qq.is_link_valid(url) == False:
+        status_list.append('URL not found')
+    else: 
+        ext_url = qq.extract_url(url)
+        if ext_url == None:
+            status_list.append('URL not found')
+        else: 
+            print("Ext URL={}".format(ext_url))
+            status = ds.download(ext_url, var.ds_destination_path)
+            status_list.append(status)
+    return jsonify(results=status_list)
 @app.route('/submit', methods=['POST'])
 @nocache
 def submit():
@@ -80,7 +101,8 @@ def submit():
         return jsonify(results=status_list)
     url_id = my_json.get('url_id')
     print("Get url_id from client '{}'".format(url_id))
-    u = up.upjav_hunter(db_name)
+    #u = up.upjav_hunter(db_name)
+    u = up.javip_hunter(db_name)
     link = u.get_rapid_link_by_url_id(url_id)
     if link == None:
         return jsonify(results=status_list)

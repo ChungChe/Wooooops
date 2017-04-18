@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# rapid link extractor
+# link extractor 
 import os
 import climber2 as climber
 from bs4 import BeautifulSoup
@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from jinja2 import Environment
 from file_utility import file_holder
 import var
+from peewee import *
 # title, img_link, rapid_links, pid
 HTML = """
     <html>
@@ -26,7 +27,7 @@ HTML = """
         <div class="row align-items-center">
         {% for data in tup_list %}
             {% if (loop.index - 1) > 0 and (loop.index  - 1) % 6 == 0 %}
-        </div><div class="row align-items-center">
+                </div><div class="row align-items-center">
             {% endif %}
             <div class="col-md-2">
                 <div class="thumbnail">
@@ -35,7 +36,7 @@ HTML = """
                     <div class="caption">
                     <h4>{{ data[0] }}</h4>
                     {% for link in data[2] %}
-                    <h5><a href="{{ link }}">{{ link.replace('http://rapidgator.net/file/','') }}</a></h5>
+                        <h5><a target="_blank" href="http://192.168.1.150:9487/dl?link={{ link }}">Download</a></h5>
                     {% endfor %}
                     </div>
                 </div>
@@ -45,11 +46,26 @@ HTML = """
     </body>
     </html>
 """
+
+db = SqliteDatabase('link_ext.db')
+
+
+class item(Model):
+    pid = CharField()
+    title = CharField()
+    img_link = CharField()
+    rapid_links = CharField()
+    class Meta:
+        database = db
+
 class javlib_member:
-    def __init__(self, member_name):
-        self.__str = member_name
+    def __init__(self):
         self.__f = file_holder()
-        self.scan('{}{}'.format(var.javlib_path, self.__str))
+    def scan_all(self):
+        ary = ['fireworks', 'javupdate', 'javmember', 'uploader', 'javlustful', 'maria01', 'member88']
+        for e in ary:
+            #scan_string = '{}{}'.format(var.javlib_path, e)
+            self.scan(e)
     def get_max_page_num(self, soup):
         href_data_sec = soup.find('a', {'class': 'page last'})
         if href_data_sec == None:
@@ -91,6 +107,8 @@ class javlib_member:
                 #if qq.is_link_valid(rapid_link) == False:
                 #    continue
                 rapid_links.append(rapid_link)
+        if len(rapid_links) == 0:
+            return None
         #print(rapid_links)
         return (title, img_link, rapid_links, pid)
     def parse_member88(self, comment):
@@ -166,7 +184,8 @@ class javlib_member:
         if len(rapid_links) == 0:
             return
         return (title, img_link, rapid_links, pid)
-    def scan(self, link):
+    def scan(self, uid):
+        link = '{}{}'.format(var.javlib_path, uid)
         print("link = '{}'".format(link))
         content = climber.get_content(link)
         if content == None:
@@ -181,7 +200,7 @@ class javlib_member:
         chunk_count = 0
         chunk_size = 240 
         for page_num in range(1, max_page_num + 1):
-            page_link = "{}{}&page={}".format(var.javlib_path, self.__str, page_num) 
+            page_link = "{}{}&page={}".format(var.javlib_path, uid, page_num) 
             tmp_content = climber.get_content(page_link)
             if tmp_content == None:
                 continue
@@ -194,25 +213,41 @@ class javlib_member:
                 continue
             for comment in video_comments:
                 tup = None
-                if self.__str == "member88":
+                if uid == "member88":
                     tup = self.parse_member88(comment)
-                elif self.__str == "maria01":
+                elif uid == "maria01":
                     tup = self.parse_maria01(comment)
-                elif self.__str == "javlustful":
+                elif uid == "javlustful":
                     tup = self.parse_javlustful(comment)
-                elif self.__str == "uploader":
+                elif uid == "uploader":
                     tup = self.parse_javlustful(comment)
-                elif self.__str == "javmember":
+                elif uid == "fireworks":
+                    tup = self.parse_javlustful(comment)
+                elif uid == "javmember":
                     tup = self.parse_member88(comment)
+                elif uid == "javupdate":
+                    tup = self.parse_maria01(comment)
                 if tup == None:
                     continue
-                print(tup)
+                #print(tup)
+                try:
+                    item.select().where((item.pid == tup[3]) & (item.title == tup[0]) & item.rapid_links == tup[2])
+                except item.DoesNotExist:
+                    item.create(pid=tup[3], title=tup[0], img_link=tup[1], rapid_links=tup[2])
+                    print("Create new item for {}".format(tup[3]))
+                #new_item, is_exist = item.get_or_create(pid=tup[3], title=tup[0], img_link=tup[1],rapid_links=tup[2])
+                #try:
+                #    item.select(item.pid, item.title, item.img_link, item.rapid_links).
+                #where(item.pid == tup[3] & item.title == tup[0] & item.img_link == tup[1] & item.rapid_links == tup[2])[0]
+                    #item.get(pid=tup[3], title=tup[0], img_link=tup[1], rapid_links=tup[2])
+                #except IndexError:
+                #item.create(pid=tup[3], title=tup[0], img_link=tup[1], rapid_links=tup[2])
                 tup_list.append(tup)
                 chunk_count += 1
                 if chunk_count > 0 and (chunk_count % chunk_size) == 0:
                     tup_list.sort()
                     output = Environment().from_string(HTML).render(tup_list=tup_list)
-                    file_name = "web/static/html/{}_{}.html".format(self.__str, chunk_count / chunk_size)
+                    file_name = "web/static/html/{}_{}.html".format(uid, chunk_count / chunk_size)
                     with open(file_name, 'w') as fp:
                         print("Write to file '{}'".format(file_name))
                         fp.write(output)
@@ -221,15 +256,41 @@ class javlib_member:
         if len(tup_list) > 0:
             tup_list.sort()
             output = Environment().from_string(HTML).render(tup_list=tup_list)
-            file_name = "web/static/html/{}_{}.html".format(self.__str, chunk_count / chunk_size + 1)
+            file_name = "web/static/html/{}_{}.html".format(uid, chunk_count / chunk_size + 1)
             with open(file_name, 'w') as fp:
                 print("Write to file '{}'".format(file_name))
                 fp.write(output)
                 tup_list = []
+    def gen_page(self):
+        items = item.select().order_by(item.pid)
+        tup_list = []
+        for i in items:
+            #print('pid = {}, title = {}'.format(i.pid, i.title))
+            # handle rapid_links
+            tmp = i.rapid_links.replace("[","").replace("]","").replace("u'", "").replace("'", "").replace(',', ' ')
+            #print("tmp = {}".format(tmp))
+            links = tmp.split()
+            #print('rapid_links = {}'.format(links))
+            tup = (i.title, i.img_link, links, i.pid)
+            tup_list.append(tup)
+            #return (title, img_link, rapid_links, pid)
+        print("Tuplist len: {}".format(len(tup_list)))
+        # list to chunks
+        chunk_size = 240
+        c = [tup_list[i:i + chunk_size] for i in xrange(0, len(tup_list), chunk_size)]
+        print("Chunk num: {}".format(len(c)))
+        for idx, ele in enumerate(c):
+            output = Environment().from_string(HTML).render(tup_list=ele)
+            file_name = "web/static/html/{}_{}.html".format("link_ext", idx)
+            with open(file_name, 'w') as fp:
+                print("Write to file '{}'".format(file_name))
+                fp.write(output)
 
 if __name__ == "__main__":
-    javlib_member('javmember')
-    javlib_member('uploader')
-    javlib_member('javlustful')
-    javlib_member('maria01')
-    javlib_member('member88')
+
+    try:
+        item.create_table()
+    except Exception as e:
+        print("Error: {}".format(e))
+    j = javlib_member()
+    j.gen_page()

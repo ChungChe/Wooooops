@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # Scan folder Sorted/
 # if /A/ACD/ACD-001/ACD-001.jpg doesn't exists
 # download from internet
@@ -27,7 +28,7 @@ def get_content(path):
         pass
     return content
 def get_javlib_link(content, product_id):
-    soup = BeautifulSoup(content)
+    soup = BeautifulSoup(content, "html.parser")
     #print("soup.len = {}".format(len(soup)))
     link = soup.find('img', {'id': 'video_jacket_img'})
     if link == None:
@@ -37,7 +38,7 @@ def get_javlib_link(content, product_id):
 def get_javbus_link(content, product_id):
     soup = BeautifulSoup(content)
     link = soup.find('a', {'class': 'bigImage'})
-    print("========= {} ==========".format(link))
+    #print("========= {} ==========".format(link))
     if link == None:
         print('Cannot find jpg javbus link from "{}", abort...'.format(product_id))
         return None 
@@ -69,7 +70,10 @@ def scan_jpg(path):
                     product_id = gg
                     #print("Check {}".format(product_id))
                 to_path = '{}/{}.jpg'.format(path, product_id)
-                if (os.path.exists(to_path)):
+                if os.path.exists(to_path):
+                    continue
+                to_path1 = '/Volumes/apen1/0032Amazon/cover/{}.jpg'.format(product_id)
+                if os.path.exists(to_path1):
                     continue
                 hyper_link_path = 'http://www.javlibrary.com/ja/vl_searchbyid.php?keyword={}'.format(product_id)
                
@@ -81,7 +85,6 @@ def scan_jpg(path):
                     link_path = get_javbus_link(another_content, product_id)
                     if link_path == None:
                         continue
-                to_path1 = '/Volumes/apen/0024Amazon/0024Amazon/cover/{}.jpg'.format(product_id)
                 print("Download '{}' -> '{}".format(link_path, to_path1))
                 dl.download_url(link_path, to_path1)
 

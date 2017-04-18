@@ -52,13 +52,16 @@ class rapidQQ:
     def extract_url(self, url):
         c = self.rapid_get(url)
         if c == None:
+            print("Fail to get url")
             return None
         soup = BeautifulSoup(c, "html.parser")
         sec = soup.find('div', {'class': 'text-block file-descr'})
         if sec == None:
+            print("Extract url get empty sec")
             return None
         url = sec.find('a')
         if url == None:
+            print("Extract url get empty url")
             return None
         l = url['href']
         return l

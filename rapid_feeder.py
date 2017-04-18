@@ -25,8 +25,8 @@ if __name__ == "__main__":
     for line in lines:
         if len(line) == 0:
             continue
-        print("Processing '{}'".format(line))
-        url = qq.extract_url(line)
+        print("Processing '{}'".format(line[:-1]))
+        url = qq.extract_url(line[:-1])
         if url == None:
             continue
         ds.download(url, var.ds_destination_path)
