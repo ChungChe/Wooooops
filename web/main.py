@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from rapid_identifier import rapidQQ
 from ds_get import download_station
 import var
+from javlib_handler import *
 
 app = Flask(__name__)
 
@@ -144,7 +145,45 @@ def post():
         body = json.dumps(ary1)
         print("Body: {}".format(body))
     return Response(body, 200, mimetype = "application/json") 
+ 
+@app.route('/javlib')
+@nocache
+def javlib():
+    h = javlib_handler()
+    m = h.search("ABP")
+    dict_list = []
+    if m != None:
+        for ele in m:
+            links = h.get_rapid_links(ele.rapid_links)
+            dict_list.append({'title': ele.title, 'cover_link': ele.img_link, 'rapid_link': links}) 
+    return render_template('javlib.html', packed_data=dict_list)
+
+@app.route('/searchjavlib/<string:path>')
+@nocache
+def query_javlib(path):
+    print("Current path = '{}'".format(path))
     
+    h = javlib_handler()
+    m = h.search(path)
+    dict_list = []
+    if m != None:
+        for ele in m:
+            links = h.get_rapid_links(ele.rapid_links)
+            dict_list.append({'pid': ele.pid, 'title': ele.title, 'cover_link': ele.img_link, 'rapid_link': links}) 
+    return render_template('javlib.html', packed_data=dict_list)
+
+@app.route('/postjavlib', methods=['POST'])
+@nocache
+def postjavlib():
+    global avail
+    my_json = request.json
+    body = ""
+    if my_json != None:
+        search_str = my_json.get('search_str')
+        ary1 = {'url': search_str}
+        body = json.dumps(ary1)
+        print("Body: {}".format(body))
+    return Response(body, 200, mimetype = "application/json") 
 
 @app.route('/')
 @nocache

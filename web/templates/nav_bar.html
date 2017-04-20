@@ -13,18 +13,11 @@
     </div>
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
         <div class="navbar-form form-group navbar-left">
-          <label class="control-label">Search From:</label>
-          <select class="form-control" name="search_type">
-            <option value="all">all</option>
-            <option value="upjav">upjav</option>
-            <option value="rare">rare</option>
-            <option value="files">files</option>
-          </select>
           <input type="checkbox" id="exists"></input>
           <label for="exists">Search exists</label>
 
-          <input type="text" class="form-control" id="search_text" placeholder="Search">
-          <button type="button" class="btn btn-default" id="button_submit">Submit</button>
+          <input type="text" class="form-control" id={% block stext_id %}"search_text"{% endblock %} placeholder="Search">
+          <button type="button" class="btn btn-default" id={% block button_id %}"button_submit"{% endblock %}>Submit</button>
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
 </nav>

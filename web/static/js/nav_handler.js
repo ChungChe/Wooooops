@@ -60,6 +60,24 @@ function post_data() {
     });
 }
 
+function post_javlib_search_data() {
+    $.ajax({
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            "search_str" : $('#javlib_search_text').val()
+            }),
+        dataType: 'json',
+        url: '/postjavlib',
+        success: function(data) {
+            redirect_url('/searchjavlib/' + data['url']);
+        },
+        error: function(error) {
+            console.log('error');
+            console.log(eval(error));
+        }
+    });
+}
 
 $(function() {
 
@@ -68,11 +86,23 @@ $(function() {
         console.log("Click Submit");
         post_data();
     });
+
     // Press enter in search string
     $('#search_text').keypress(function(e) {
         if (e.which == '13') {
             console.log("Press Enter");
             post_data();
+        }
+    });
+    
+    $('#javlib_button').click(function() {
+        post_javlib_search_data();
+    });
+    
+    // Press enter in search string
+    $('#javlib_search_text').keypress(function(e) {
+        if (e.which == '13') {
+            post_javlib_search_data();
         }
     });
 

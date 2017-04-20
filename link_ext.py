@@ -267,7 +267,10 @@ class javlib_member:
         for i in items:
             #print('pid = {}, title = {}'.format(i.pid, i.title))
             # handle rapid_links
+            if self.__f.is_file_exists(i.pid):
+                continue
             tmp = i.rapid_links.replace("[","").replace("]","").replace("u'", "").replace("'", "").replace(',', ' ')
+            
             #print("tmp = {}".format(tmp))
             links = tmp.split()
             #print('rapid_links = {}'.format(links))

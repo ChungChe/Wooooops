@@ -1,0 +1,35 @@
+{% extends 'nav_bar.html' %}
+{% block title %}
+<br>
+{% endblock %}
+
+{% block button_id %}
+javlib_button
+{% endblock %}
+
+{% block stext_id %}
+javlib_search_text
+{% endblock %}
+
+{% block content %}
+        <div class="row">
+        {% for data in packed_data %}
+            {% if (loop.index - 1) > 0 and (loop.index - 1) % 12 == 0%}
+        </div><div class="row align-items-center">
+            {% endif %}
+            <div class="col-md-1">
+                <div class="thumbnail">
+                    <h4>{{ data['title'] }}</h4>
+                    <a target="_blank" href="https://www.javbus.com/{{ data['pid'] }}">
+                    <img src="{{ data['cover_link'] }}"></img>
+                    </a>
+                    <div class="caption">
+                        {% for l in data['rapid_link'] %}
+                        <h5><a target="_blank" href="http://192.168.1.150:9487/dl?link={{ l }}">Download</a></h5>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+{% endblock %}
